@@ -1,0 +1,13 @@
+# Include documentation
+include README.md
+include LICENSE
+include docs/OPTIMIZATIONS.md
+include docs/CHEATSHEET.md
+
+# Include example data
+recursive-include example_data *.png *.jpg
+
+# Exclude unnecessary files
+exclude .gitignore
+recursive-exclude tests *
+recursive-exclude .github *

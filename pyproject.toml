@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "camera-depth-models"
+version = "1.0.2"
+description = "Camera Depth Models for accurate metric depth estimation from RGB-D sensors"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Manipulation as in Simulation Contributors"}
+]
+keywords = [
+    "depth estimation",
+    "computer vision",
+    "robotics",
+    "sim-to-real",
+    "rgb-d",
+    "vision transformer"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Robotics",
+]
+
+dependencies = [
+    "torch>=1.8.0",
+    "torchvision>=0.9.0",
+    "opencv-python>=4.5.0",
+    "numpy>=1.19.0",
+    "pillow>=8.0.0",
+    "matplotlib>=3.0.0",
+]
+
+[project.optional-dependencies]
+# CUDA optimizations (Linux/Windows with NVIDIA GPU)
+cuda = [
+    "xformers>=0.0.20; platform_system != 'Darwin'",
+    "triton>=2.1.0; platform_system != 'Darwin'",
+]
+
+# Development tools
+dev = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "ruff>=0.1.0",
+]
+
+# Model downloads from HuggingFace
+download = [
+    "huggingface-hub>=0.16.0",
+]
+
+# Everything
+all = [
+    "xformers>=0.0.20; platform_system != 'Darwin'",
+    "triton>=2.1.0; platform_system != 'Darwin'",
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "ruff>=0.1.0",
+    "huggingface-hub>=0.16.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/manipulation-as-in-simulation/camera-depth-models"
+Documentation = "https://github.com/manipulation-as-in-simulation/camera-depth-models#readme"
+Repository = "https://github.com/manipulation-as-in-simulation/camera-depth-models"
+"Bug Tracker" = "https://github.com/manipulation-as-in-simulation/camera-depth-models/issues"
+"Paper" = "https://manipulation-as-in-simulation.github.io/"
+
+[project.scripts]
+cdm-infer = "rgbddepth.cli:main_infer"
+cdm-download = "rgbddepth.cli:main_download"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rgbddepth*"]
+exclude = ["tests*", "docs*", "example_data*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
