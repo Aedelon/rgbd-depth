@@ -7,10 +7,6 @@
 
 Camera Depth Models (CDM) provides **accurate metric depth estimation** from RGB-D sensors using Vision Transformer encoders. CDM produces clean, simulation-like depth maps from noisy real-world camera data, enabling seamless **sim-to-real transfer** for robotic manipulation tasks.
 
-<p align="center">
-  <img src="docs/assets/cdm_overview.png" alt="CDM Overview" width="80%">
-</p>
-
 ## 🚀 Quick Start
 
 ### Installation
@@ -174,7 +170,6 @@ Supported encoder sizes: `vits`, `vitb`, `vitl`, `vitg`
 
 - [OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md) - Complete optimization guide
 - [CHEATSHEET.md](docs/CHEATSHEET.md) - Quick reference commands
-- [API Documentation](https://camera-depth-models.readthedocs.io/) - Full API docs
 
 ## 🔬 Research
 
@@ -241,4 +236,4 @@ This project is licensed under the Apache 2.0 License. See [LICENSE](LICENSE) fo
 
 ---
 
-Made with ❤️ by the Manipulation as in Simulation team
+Open-source contribution based on the [Manipulation as in Simulation](https://manipulation-as-in-simulation.github.io/) research project.
