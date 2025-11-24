@@ -3,7 +3,6 @@
 [![PyPI version](https://badge.fury.io/py/camera-depth-models.svg)](https://badge.fury.io/py/camera-depth-models)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://github.com/manipulation-as-in-simulation/camera-depth-models/workflows/Tests/badge.svg)](https://github.com/Aedelon/camera-depth-models/actions)
 
 Camera Depth Models (CDM) provides **accurate metric depth estimation** from RGB-D sensors using Vision Transformer encoders. CDM produces clean, simulation-like depth maps from noisy real-world camera data, enabling seamless **sim-to-real transfer** for robotic manipulation tasks.
 
