@@ -1,185 +1,132 @@
 # Camera Depth Models (CDM)
 
-[![PyPI version](https://badge.fury.io/py/camera-depth-models.svg)](https://badge.fury.io/py/camera-depth-models)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+CDM is a depth estimation package that uses Vision Transformer encoders for accurate RGB-D depth inference. It provides high-quality, metric depth data to enable seamless sim-to-real transfer for robotic manipulation tasks.
 
-Camera Depth Models (CDM) provides **accurate metric depth estimation** from RGB-D sensors using Vision Transformer encoders. CDM produces clean, simulation-like depth maps from noisy real-world camera data, enabling seamless **sim-to-real transfer** for robotic manipulation tasks.
+## Overview
 
-## FAST Quick Start
+Camera Depth Models (CDMs) are sensor-specific depth models trained to produce clean, simulation-like depth maps from noisy real-world depth camera data. By bridging the visual gap between simulation and reality through depth perception, CDMs enable robotic policies trained purely in simulation to transfer directly to real robots.
 
-### Installation
+### Key Features
+
+- **Metric Depth Estimation**: Produces accurate absolute depth measurements in meters
+- **Multi-Camera Support**: Optimized models for various depth sensors (RealSense D405/D435/L515, ZED 2i, Azure Kinect)
+- **Real-time Performance**: Lightweight inference for smooth robot control
+- **Sim-to-Real Ready**: Generates simulation-quality depth from real camera data
+
+## Architecture
+
+CDM uses a dual-branch Vision Transformer architecture:
+- **RGB Branch**: Extracts semantic information from RGB images
+- **Depth Branch**: Processes noisy depth sensor data
+- **Cross-Attention Fusion**: Combines RGB semantics with depth scale information
+- **DPT Decoder**: Produces final metric depth estimation
+
+Supported ViT encoder sizes:
+- `vits`: Small (64 features, 384 output channels)
+- `vitb`: Base (128 features, 768 output channels)
+- `vitl`: Large (256 features, 1024 output channels)
+- `vitg`: Giant (384 features, 1536 output channels)
+
+All pretrained models we provide are based on `vitl`.
+
+## Installation
 
 ```bash
-pip install camera-depth-models
-pip install "camera-depth-models[cuda]"  # For NVIDIA GPUs
+cd cdm
+pip install -e .
 ```
 
-Or install from source with GPU optimizations:
+## Usage
+
+### Basic Inference
 
 ```bash
-git clone https://github.com/manipulation-as-in-simulation/camera-depth-models.git
-cd camera-depth-models
-pip install -e .[cuda]  # For NVIDIA GPUs
-# pip install -e .      # For CPU/MPS only
-```
-
-### Quickstart Demo
-
-```bash
-# Download the quickstart script
-curl -O https://raw.githubusercontent.com/manipulation-as-in-simulation/camera-depth-models/main/scripts/quickstart.sh
-chmod +x quickstart.sh
-./quickstart.sh
-```
-
-### Basic Usage
-
-```bash
-# Download a pre-trained model
-cdm-download --camera d435
-
-# Run inference
-cdm-infer \
+python infer.py \
     --encoder vitl \
-    --model-path models/d435_model.pth \
-    --rgb-image rgb.jpg \
-    --depth-image depth.png \
-    --output result.png
+    --model-path /path/to/model.pth \
+    --rgb-image /path/to/rgb.jpg \
+    --depth-image /path/to/depth.png \
+    --output visualization.png
 ```
 
-**That's it!** CDM automatically:
-- Detects your hardware (CUDA/MPS/CPU)
-- Applies optimal device-specific optimizations
-- Produces high-quality metric depth output
+> We provide the example image and depth in the `cdm/input_data` folder. And the available models can be downloaded from [here](https://huggingface.co/collections/depth-anything/camera-depth-models-68b521181dedd223f4b020db).
+### Command Line Arguments
 
-## 📖 Features
+- `--encoder`: Model size (`vits`, `vitb`, `vitl`, `vitg`) - default: `vitl`
+- `--model-path`: Path to trained model checkpoint (required)
+- `--rgb-image`: Path to RGB input image (required)
+- `--depth-image`: Path to depth input image (required)
+- `--output`: Output visualization path - default: `output.png`
+- `--input-size`: Input resolution for inference - default: 518
+- `--depth-scale`: Scale factor for depth values - default: 1000.0
+- `--max-depth`: Maximum valid depth in meters - default: 6.0
 
-- OK **Automatic optimization** - Zero configuration required
-- OK **Metric depth estimation** - Accurate absolute depth in meters
-- OK **Multi-camera support** - Pre-trained for RealSense, ZED 2i, Kinect
-- OK **Sim-to-Real ready** - Clean depth from noisy sensor data
-- OK **Real-time performance** - Optimized for robot control
-- OK **Easy CLI** - Simple command-line tools
-- OK **Python API** - Flexible programmatic interface
-
-## 🎯 Supported Cameras
-
-Pre-trained models available for:
-
-| Camera | Models Available |
-|--------|------------------|
-| **Intel RealSense** | D405, D415, D435, D455, L515 |
-| **Stereolabs ZED 2i** | Quality mode, Neural mode |
-| **Microsoft Azure Kinect** | Standard mode |
-
-Download with: `cdm-download --camera <model_name>`
-
-List all models: `cdm-download --list`
-
-## DESKTOP Python API
+### Python API
 
 ```python
-from rgbddepth import RGBDDepth, OptimizationConfig
+from rgbddepth.dpt import RGBDDepth
 import cv2
 import numpy as np
 
-# Auto-optimized configuration
-config = OptimizationConfig(device="auto")
-
-# Create model
-model = RGBDDepth(
-    encoder='vitl',
-    features=256,
-    out_channels=[256, 512, 1024, 1024],
-    config=config
-)
+# Load model
+model = RGBDDepth(encoder='vitl', features=256)
 model.load_state_dict(torch.load('model.pth'))
 model.eval()
 
 # Load images
 rgb = cv2.imread('rgb.jpg')[:, :, ::-1]  # BGR to RGB
-depth = cv2.imread('depth.png', cv2.IMREAD_UNCHANGED) / 1000.0  # to meters
+depth = cv2.imread('depth.png', cv2.IMREAD_UNCHANGED) / 1000.0  # Convert to meters
 
-# Create inverse depth
-inv_depth = np.zeros_like(depth)
-inv_depth[depth > 0] = 1 / depth[depth > 0]
+# Create similarity depth (inverse depth)
+simi_depth = np.zeros_like(depth)
+simi_depth[depth > 0] = 1 / depth[depth > 0]
 
 # Run inference
-pred_depth = model.infer_image(rgb, inv_depth, input_size=518)
+pred_depth = model.infer_image(rgb, simi_depth, input_size=518)
 ```
 
-## 📊 Performance
+## Model Training
 
-**Device-Specific Optimizations** deliver **1.8x to 4.8x speedup**:
+CDMs are trained on synthetic datasets generated using camera-specific noise models:
 
-| Device | Speed | Optimizations |
-|--------|-------|---------------|
-| **NVIDIA GPU** | **4-5x faster** | xformers + compile + FP16 |
-| **Apple Silicon** | **2-3x faster** | Manual attention + fused encoder |
-| **CPU** | **1.5-2x faster** | channels_last + fused encoder |
+1. **Noise Model Training**: Learn hole and value noise patterns from real camera data
+2. **Synthetic Data Generation**: Apply learned noise to clean simulation depth
+3. **CDM Training**: Train depth estimation model on synthetic noisy data
 
-See [OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md) for details.
+Training datasets: HyperSim, DREDS, HISS, IRS (280,000+ images total)
 
-## 🔧 Advanced Usage
+## Supported Cameras
 
-### Manual Configuration
+We currently provide pre-trained models available for:
+- Intel RealSense D405/D435/L515
+- Stereolabs ZED 2i (2 modes: Quality, Neural)
+- Microsoft Azure Kinect
 
-```python
-from rgbddepth import OptimizationConfig
+## File Structure
 
-# Fine-grained control
-config = OptimizationConfig(
-    device="cuda",
-    attention_backend="xformers",
-    use_compile=True,
-    mixed_precision="fp16",
-    use_channels_last=True
-)
+```
+cdm/
+├── infer.py              # Main inference script
+├── setup.py              # Package installation
+├── rgbddepth/            # Core package
+│   ├── __init__.py
+│   ├── dpt.py            # Main RGBDDepth model
+│   ├── dinov2.py         # DINOv2 encoder
+│   ├── dinov2_layers/    # ViT transformer layers
+│   └── util/             # Utility functions
+│       ├── blocks.py     # Neural network blocks
+│       └── transform.py  # Image preprocessing
+└── README.md
 ```
 
-### Command-Line Options
+## Performance
 
-```bash
-cdm-infer \
-    --encoder vitl \
-    --model-path model.pth \
-    --rgb-image rgb.jpg \
-    --depth-image depth.png \
-    --output result.png \
-    --device cuda \
-    --attention-backend xformers \
-    --mixed-precision fp16 \
-    --use-compile true
-```
+CDMs achieve state-of-the-art performance on metric depth estimation:
+- Superior accuracy compared to existing prompt-based depth models
+- Zero-shot generalization across different camera types
+- Real-time inference suitable for robot control (lightweight ViT variants)
 
-See `cdm-infer --help` for all options.
-
-## 🏗️ Architecture
-
-CDM uses a dual-branch Vision Transformer architecture:
-
-- **RGB Branch**: Extracts semantic information from RGB images
-- **Depth Branch**: Processes noisy depth sensor data
-- **Cross-Attention Fusion**: Combines RGB semantics with depth scale
-- **DPT Decoder**: Produces final metric depth estimation
-
-Supported encoder sizes: `vits`, `vitb`, `vitl`, `vitg`
-
-## DOCS Documentation
-
-- [OPTIMIZATIONS.md](docs/OPTIMIZATIONS.md) - Complete optimization guide
-- [CHEATSHEET.md](docs/CHEATSHEET.md) - Quick reference commands
-
-## 🔬 Research
-
-CDM is part of the **"Manipulation as in Simulation"** research project. For more details, see:
-
-- **Paper**: [Manipulation as in Simulation](https://manipulation-as-in-simulation.github.io/)
-- **Full Suite**: [manip-as-in-sim-suite](https://github.com/manipulation-as-in-simulation/manip-as-in-sim-suite) (includes WBCMimic for robot demonstrations)
-- **Dataset**: [ByteCameraDepth](https://huggingface.co/datasets/ByteDance-Seed/ByteCameraDepth)
-
-### Citation
+## Citation
 
 If you use CDM in your research, please cite:
 
@@ -194,46 +141,6 @@ If you use CDM in your research, please cite:
 }
 ```
 
-## 🧪 Testing
+## License
 
-```bash
-# Install with dev dependencies
-pip install -e .[dev]
-
-# Run tests
-pytest tests/ -v
-
-# Run specific test
-pytest tests/test_import.py -v
-```
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new features
-4. Ensure all tests pass: `pytest tests/`
-5. Format code: `black . && isort .`
-6. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the Apache 2.0 License. See [LICENSE](LICENSE) for details.
-
-## 🔗 Links
-
-- **GitHub**: [camera-depth-models](https://github.com/manipulation-as-in-simulation/camera-depth-models)
-- **PyPI**: [camera-depth-models](https://pypi.org/project/camera-depth-models/)
-- **Pre-trained Models**: [HuggingFace Collection](https://huggingface.co/collections/depth-anything/camera-depth-models-68b521181dedd223f4b020db)
-- **Project Website**: [Manipulation as in Simulation](https://manipulation-as-in-simulation.github.io/)
-
-## 📧 Support
-
-- **Issues**: [GitHub Issues](https://github.com/manipulation-as-in-simulation/camera-depth-models/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/manipulation-as-in-simulation/camera-depth-models/discussions)
-
----
-
-Open-source contribution based on the [Manipulation as in Simulation](https://manipulation-as-in-simulation.github.io/) research project.
+This project is licensed under the Apache 2.0 License. See [LICENSE](../LICENSE) for details.

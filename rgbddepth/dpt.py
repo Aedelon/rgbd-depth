@@ -2,22 +2,13 @@
 # Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-"""
-Unified RGBDDepth model with built-in device-specific optimizations.
-This merges the previous optimized implementation into the main class.
-"""
-
-from typing import Optional
-
 import cv2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.transforms import Compose
 
-from .attention import create_cross_attention
 from .dinov2 import DINOv2
-from .optimization_config import OptimizationConfig
 from .util.blocks import FeatureFusionBlock, _make_scratch
 from .util.transform import NormalizeImage, PrepareForNet, Resize
 
@@ -34,6 +25,20 @@ def _make_fusion_block(features, use_bn, size=None):
     )
 
 
+class ConvBlock(nn.Module):
+    def __init__(self, in_feature, out_feature):
+        super().__init__()
+
+        self.conv_block = nn.Sequential(
+            nn.Conv2d(in_feature, out_feature, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(out_feature),
+            nn.ReLU(True),
+        )
+
+    def forward(self, x):
+        return self.conv_block(x)
+
+
 class DPTHead(nn.Module):
     def __init__(
         self,
@@ -43,12 +48,10 @@ class DPTHead(nn.Module):
         out_channels=[256, 512, 1024, 1024],
         use_clstoken=False,
         sigact_out=False,
-        interpolation_mode="bilinear",
     ):
         super(DPTHead, self).__init__()
 
         self.use_clstoken = use_clstoken
-        self.interpolation_mode = interpolation_mode
 
         self.projects = nn.ModuleList(
             [
@@ -179,8 +182,8 @@ class DPTHead(nn.Module):
         out = F.interpolate(
             out,
             (int(patch_h * 14), int(patch_w * 14)),
-            mode=self.interpolation_mode,
-            align_corners=True if self.interpolation_mode != "nearest" else None,
+            mode="bilinear",
+            align_corners=True,
         )
         out = self.scratch.output_conv2(out)
 
@@ -188,8 +191,6 @@ class DPTHead(nn.Module):
 
 
 class RGBDDepth(nn.Module):
-    """RGBDDepth model with built-in device-specific optimizations."""
-
     def __init__(
         self,
         encoder="vitl",
@@ -198,14 +199,8 @@ class RGBDDepth(nn.Module):
         use_bn=False,
         use_clstoken=False,
         max_depth=20.0,
-        config: Optional[OptimizationConfig] = None,
     ):
         super(RGBDDepth, self).__init__()
-
-        # Use provided config or create default
-        self.config = config if config is not None else OptimizationConfig()
-
-        print(self.config.summary())
 
         self.intermediate_layer_idx = {
             "vits": [2, 5, 8, 11],
@@ -215,19 +210,12 @@ class RGBDDepth(nn.Module):
         }
 
         self.max_depth = max_depth
+
         self.encoder = encoder
+        self.pretrained = DINOv2(model_name=encoder)
+        self.depth_pretrained = DINOv2(model_name=encoder)
 
-        # Initialize encoders
-        if self.config.fuse_depth_encoder:
-            print("Using fused encoder (memory efficient)")
-            self.pretrained = DINOv2(model_name=encoder)
-            self.depth_pretrained = self.pretrained
-        else:
-            print("Using separate encoders (better parallelism)")
-            self.pretrained = DINOv2(model_name=encoder)
-            self.depth_pretrained = DINOv2(model_name=encoder)
-
-        # Initialize depth head with optimized interpolation
+        # self.depth_head = DPTHead(self.pretrained.embed_dim, features, use_bn, out_channels=out_channels, use_clstoken=use_clstoken, sigact_out=False)
         self.depth_head_rgbd = DPTHead(
             self.pretrained.embed_dim * 2,
             features,
@@ -235,56 +223,18 @@ class RGBDDepth(nn.Module):
             out_channels=out_channels,
             use_clstoken=use_clstoken,
             sigact_out=False,
-            interpolation_mode=self.config.interpolation_mode,
         )
 
-        # Create optimized cross-attention modules
+        # cross att
         num_heads = 4
         self.crossAtts = nn.ModuleList(
             [
-                create_cross_attention(
-                    embed_dim=self.pretrained.embed_dim,
-                    num_heads=num_heads,
-                    backend=self.config.attention_backend,
-                    device=self.config.device,
-                )
-                for _ in range(4)
+                nn.MultiheadAttention(self.pretrained.embed_dim, num_heads, batch_first=True),
+                nn.MultiheadAttention(self.pretrained.embed_dim, num_heads, batch_first=True),
+                nn.MultiheadAttention(self.pretrained.embed_dim, num_heads, batch_first=True),
+                nn.MultiheadAttention(self.pretrained.embed_dim, num_heads, batch_first=True),
             ]
         )
-
-        # Apply device-specific optimizations
-        self._apply_optimizations()
-
-    def _apply_optimizations(self):
-        """Apply device-specific optimizations."""
-        self.to(self.config.device)
-
-        if self.config.use_channels_last:
-            print("Applying channels_last memory format to decoder")
-            self.depth_head_rgbd.to(memory_format=torch.channels_last)
-
-        if self.config.dtype != torch.float32:
-            print(f"Converting model to {self.config.dtype}")
-            try:
-                self.to(dtype=self.config.dtype)
-            except Exception as e:
-                if self.config.device.startswith("mps") and self.config.dtype == torch.float16:
-                    print(f"Warning: FP16 failed on MPS ({e}), falling back to FP32")
-                    self.config.dtype = torch.float32
-                    self.to(dtype=torch.float32)
-                else:
-                    raise
-
-        if self.config.use_compile:
-            try:
-                print("Applying torch.compile optimization")
-                self.forward = torch.compile(
-                    self.forward,
-                    mode="max-autotune",
-                    fullgraph=False,
-                )
-            except Exception as e:
-                print(f"Warning: torch.compile failed: {e}")
 
     def forward(self, x):
         rgb, depth = x[:, :3], x[:, 3:]
@@ -295,55 +245,36 @@ class RGBDDepth(nn.Module):
                 rgb, self.intermediate_layer_idx[self.encoder], return_class_token=True
             )
 
-        depth_input = depth.repeat(1, 3, 1, 1)
-
         features_depth = self.depth_pretrained.get_intermediate_layers(
-            depth_input,
+            depth.repeat(1, 3, 1, 1),
             self.intermediate_layer_idx[self.encoder],
             return_class_token=True,
         )
-
         features = []
         for f_rgb, f_depth, crossAtt in zip(features_rgb, features_depth, self.crossAtts):
             B, N, C = f_rgb[0].shape
-
-            token_feat = torch.stack([f_rgb[0], f_depth[0]], dim=2)
-            token_feat = token_feat.reshape(B * N, 2, C)
-
+            tf_rgb = f_rgb[0].reshape(B * N, 1, C)
+            tf_depth = f_depth[0].reshape(B * N, 1, C)
+            token_feat = torch.concat((tf_rgb, tf_depth), axis=1)
             att_feat, _ = crossAtt(token_feat, token_feat, token_feat)
-            att_feat = att_feat.sum(dim=1).reshape(B, N, C)
+            att_feat = att_feat.reshape(B * N, 2, C).sum(axis=1).reshape(B, N, C)
 
-            feat = torch.cat([f_rgb[0], att_feat], dim=2)
-            cls_t = torch.cat([f_rgb[1], f_depth[1]], dim=1)
-
-            features.append((feat, cls_t))
-
+            feat = torch.concat((f_rgb[0], att_feat), axis=2)
+            cls_t = torch.concat((f_rgb[1], f_depth[1]), axis=1)
+            tuples = (feat, cls_t)
+            features.append(tuples)
         depth = self.depth_head_rgbd(features, patch_h, patch_w)
         depth = F.relu(depth)
-
         return depth.squeeze(1)
 
     @torch.no_grad()
     def infer_image(self, raw_image, depth_low_res, input_size=518):
-        """Run inference on a single image."""
         inputs, (h, w) = self.image2tensor(raw_image, depth_low_res, input_size)
-
-        device_type = self.config.device.split(":")[0]
-        if self.config.dtype != torch.float32 and device_type in ["cuda", "mps"]:
-            try:
-                with torch.autocast(device_type=device_type, dtype=self.config.dtype):
-                    pred_depth = self.forward(inputs)
-            except Exception as e:
-                print(f"Warning: autocast failed ({e}), using FP32")
-                pred_depth = self.forward(inputs)
-        else:
-            pred_depth = self.forward(inputs)
-
+        pred_depth = self.forward(inputs)
         pred_depth = F.interpolate(pred_depth[:, None], (h, w), mode="nearest")[0, 0]
         return pred_depth.cpu().numpy()
 
     def image2tensor(self, raw_image, depth, input_size=518):
-        """Convert image and depth to tensor format."""
         transform = Compose(
             [
                 Resize(
@@ -362,11 +293,7 @@ class RGBDDepth(nn.Module):
 
         h, w = raw_image.shape[:2]
 
-        if raw_image.shape[2] == 3 and raw_image[:, :, 0].mean() != raw_image[:, :, 2].mean():
-            image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB) / 255.0
-        else:
-            image = raw_image.astype(float) / 255.0
-
+        image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB) / 255.0
         prepared = transform({"image": image, "depth": depth})
         image = prepared["image"]
         image = torch.from_numpy(image).unsqueeze(0)
@@ -375,9 +302,12 @@ class RGBDDepth(nn.Module):
         depth = torch.from_numpy(depth).unsqueeze(0).unsqueeze(0)
 
         inputs = torch.cat((image, depth), dim=1)
-        inputs = inputs.to(device=self.config.device, dtype=self.config.dtype)
+
+        DEVICE = (
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps" if torch.backends.mps.is_available() else "cpu"
+        )
+        inputs = inputs.to(DEVICE)
 
         return inputs, (h, w)
-
-    def get_config(self) -> OptimizationConfig:
-        return self.config
