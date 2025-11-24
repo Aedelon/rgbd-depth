@@ -108,25 +108,48 @@ cdm-infer --help
 
 ## 📝 Prochaines étapes
 
-### 1. Initialiser Git (OBLIGATOIRE)
+### 1. Setup Git et GitHub (AUTOMATIQUE avec SSH)
+
+**Option A - Script automatique (recommandé)** :
 ```bash
 cd /Users/aedelon/Workspace/camera-depth-models
+
+# Éditer GIT_SETUP.sh et remplacer TON-ORG par ton username GitHub
+nano GIT_SETUP.sh  # Ligne 10: GITHUB_ORG="ton-username"
+
+# Exécuter le script
+./GIT_SETUP.sh
+```
+
+Le script fait tout automatiquement :
+- Init Git
+- Commit initial
+- Configuration remote SSH
+- Push vers GitHub
+- Création tag v1.0.2
+
+**Option B - Manuel avec SSH** :
+```bash
+cd /Users/aedelon/Workspace/camera-depth-models
+
+# 1. Init Git
 git init
 git add .
 git commit -m "Initial commit: Camera Depth Models v1.0.2"
-```
 
-### 2. Créer le repo GitHub
-1. Aller sur https://github.com/new
-2. Nom : `camera-depth-models`
-3. Description : "Camera Depth Models for accurate metric depth estimation from RGB-D sensors"
-4. Public
-5. Ne PAS initialiser avec README (déjà présent)
+# 2. Créer le repo sur GitHub (https://github.com/new)
+#    Nom: camera-depth-models
+#    Description: Camera Depth Models for accurate metric depth estimation from RGB-D sensors
+#    Public, sans README/gitignore/license
 
-```bash
-git remote add origin https://github.com/TON-ORG/camera-depth-models.git
+# 3. Config remote SSH
+git remote add origin git@github.com:TON-USERNAME/camera-depth-models.git
 git branch -M main
 git push -u origin main
+
+# 4. Tag
+git tag -a v1.0.2 -m "Release v1.0.2"
+git push origin v1.0.2
 ```
 
 ### 3. Configurer GitHub
