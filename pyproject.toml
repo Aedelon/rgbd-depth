@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "camera-depth-models"
-version = "1.0.2"
+version = "1.0.0"
 description = "Camera Depth Models for accurate metric depth estimation from RGB-D sensors"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Apache-2.0"}
 authors = [
     {name = "Manipulation as in Simulation Contributors"}
+    ,{name = "Aedelon"}
 ]
 keywords = [
     "depth estimation",
@@ -32,8 +33,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Scientific/Engineering :: Image Processing",
-    "Topic :: Scientific/Engineering :: Robotics",
+    "Topic :: Scientific/Engineering :: Image Processing"
 ]
 
 dependencies = [
