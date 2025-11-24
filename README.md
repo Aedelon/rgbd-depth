@@ -12,6 +12,7 @@ Camera Depth Models (CDM) provides **accurate metric depth estimation** from RGB
 
 ```bash
 pip install camera-depth-models
+pip install "camera-depth-models[cuda]"  # For NVIDIA GPUs
 ```
 
 Or install from source with GPU optimizations:
