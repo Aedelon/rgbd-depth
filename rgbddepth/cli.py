@@ -5,7 +5,6 @@
 """Command-line interfaces for Camera Depth Models."""
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -25,30 +24,31 @@ Examples:
 
   # List available models
   cdm-download --list
-        """
+        """,
     )
 
     parser.add_argument(
         "--camera",
         type=str,
         choices=[
-            "d405", "d415", "d435", "d455", "l515",  # RealSense
-            "zed2i-quality", "zed2i-neural",          # ZED 2i
-            "kinect"                                   # Azure Kinect
+            "d405",
+            "d415",
+            "d435",
+            "d455",
+            "l515",  # RealSense
+            "zed2i-quality",
+            "zed2i-neural",  # ZED 2i
+            "kinect",  # Azure Kinect
         ],
-        help="Camera model to download"
+        help="Camera model to download",
     )
     parser.add_argument(
         "--output-dir",
         type=str,
         default="./models",
-        help="Directory to save models (default: ./models)"
+        help="Directory to save models (default: ./models)",
     )
-    parser.add_argument(
-        "--list",
-        action="store_true",
-        help="List all available models"
-    )
+    parser.add_argument("--list", action="store_true", help="List all available models")
 
     args = parser.parse_args()
 
@@ -99,12 +99,14 @@ Examples:
             repo_id=MODELS[args.camera],
             filename="model.pth",
             cache_dir=str(output_dir),
-            resume_download=True
+            resume_download=True,
         )
-        print(f"✓ Model downloaded successfully!")
+        print("✓ Model downloaded successfully!")
         print(f"  Path: {model_path}")
-        print(f"\nUsage:")
-        print(f"  cdm-infer --encoder vitl --model-path {model_path} --rgb-image <rgb> --depth-image <depth>")
+        print("\nUsage:")
+        print(
+            f"  cdm-infer --encoder vitl --model-path {model_path} --rgb-image <rgb> --depth-image <depth>"
+        )
     except Exception as e:
         print(f"Error downloading model: {e}")
         sys.exit(1)
@@ -116,6 +118,7 @@ def main_infer():
     try:
         # We'll create a separate infer.py that this imports from
         from rgbddepth.infer import main as run_inference
+
         run_inference()
     except ImportError:
         print("Error: Inference module not found")
@@ -126,6 +129,7 @@ def main_infer():
 if __name__ == "__main__":
     # For testing
     import sys
+
     if len(sys.argv) > 1 and sys.argv[1] == "download":
         main_download()
     else:

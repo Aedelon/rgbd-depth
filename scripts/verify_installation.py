@@ -62,26 +62,26 @@ def check_devices():
 
     # CUDA
     if torch.cuda.is_available():
-        print(f"✓ CUDA available")
+        print("✓ CUDA available")
         print(f"  - CUDA version: {torch.version.cuda}")
         print(f"  - Device: {torch.cuda.get_device_name(0)}")
         print(f"  - Device count: {torch.cuda.device_count()}")
     else:
-        print(f"✗ CUDA not available")
+        print("✗ CUDA not available")
 
     # MPS
-    if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
-        print(f"✓ MPS available (Apple Silicon)")
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        print("✓ MPS available (Apple Silicon)")
     else:
-        print(f"✗ MPS not available")
+        print("✗ MPS not available")
 
     # CPU
-    print(f"✓ CPU available")
+    print("✓ CPU available")
 
     # Determine best device
     if torch.cuda.is_available():
         best_device = "cuda"
-    elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         best_device = "mps"
     else:
         best_device = "cpu"
@@ -98,6 +98,7 @@ def check_optimizations():
 
     try:
         from rgbddepth.optimization_config import OptimizationConfig
+
         print("✓ OptimizationConfig imported")
     except ImportError as e:
         print(f"✗ Failed to import OptimizationConfig: {e}")
@@ -105,6 +106,7 @@ def check_optimizations():
 
     try:
         from rgbddepth.attention import AdaptiveCrossAttention
+
         print("✓ AdaptiveCrossAttention imported")
     except ImportError as e:
         print(f"✗ Failed to import AdaptiveCrossAttention: {e}")
@@ -112,6 +114,7 @@ def check_optimizations():
 
     try:
         from rgbddepth.dpt import RGBDDepth
+
         print("✓ RGBDDepth imported")
     except ImportError as e:
         print(f"✗ Failed to import RGBDDepth: {e}")
@@ -131,7 +134,7 @@ def check_config_creation(device):
 
         # Test auto config
         config = OptimizationConfig(device="auto")
-        print(f"✓ Auto config created")
+        print("✓ Auto config created")
         print(f"  - Detected device: {config.device}")
         print(f"  - Attention backend: {config.attention_backend}")
         print(f"  - Mixed precision: {config.mixed_precision}")
@@ -148,6 +151,7 @@ def check_config_creation(device):
     except Exception as e:
         print(f"✗ Failed to create config: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -163,20 +167,14 @@ def check_model_creation(device):
         from rgbddepth.optimization_config import OptimizationConfig
 
         # Use smaller model for faster testing
-        config = OptimizationConfig(
-            device=device,
-            use_compile=False  # Disable compile for testing
-        )
+        config = OptimizationConfig(device=device, use_compile=False)  # Disable compile for testing
 
-        print(f"Creating small model (vits) for testing...")
+        print("Creating small model (vits) for testing...")
         model = RGBDDepth(
-            encoder="vits",
-            features=64,
-            out_channels=[48, 96, 192, 384],
-            config=config
+            encoder="vits", features=64, out_channels=[48, 96, 192, 384], config=config
         )
 
-        print(f"✓ Model created successfully")
+        print("✓ Model created successfully")
         print(f"  - Device: {config.device}")
         print(f"  - Dtype: {config.dtype}")
 
@@ -184,6 +182,7 @@ def check_model_creation(device):
     except Exception as e:
         print(f"✗ Failed to create model: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -207,10 +206,7 @@ def check_attention_backends(device):
     for backend in backends_to_test:
         try:
             attention = create_cross_attention(
-                embed_dim=384,
-                num_heads=6,
-                backend=backend,
-                device=device
+                embed_dim=384, num_heads=6, backend=backend, device=device
             )
             print(f"✓ {backend:<15} backend available")
             results[backend] = True
@@ -329,7 +325,9 @@ def main():
     # Test model creation
     model_ok = check_model_creation(device)
     if not model_ok:
-        print("\n⚠️  Model creation failed, but this might be OK if you don't have a model checkpoint")
+        print(
+            "\n⚠️  Model creation failed, but this might be OK if you don't have a model checkpoint"
+        )
 
     # Check attention backends
     backends = check_attention_backends(device)

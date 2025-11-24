@@ -5,12 +5,12 @@
 """Basic import and smoke tests for camera-depth-models."""
 
 import pytest
-import torch
 
 
 def test_import_main_modules():
     """Test that main modules can be imported."""
-    from rgbddepth import RGBDDepth, OptimizationConfig, get_optimal_config
+    from rgbddepth import OptimizationConfig, RGBDDepth, get_optimal_config
+
     assert RGBDDepth is not None
     assert OptimizationConfig is not None
     assert get_optimal_config is not None
@@ -19,6 +19,7 @@ def test_import_main_modules():
 def test_import_attention():
     """Test attention module imports."""
     from rgbddepth.attention import AdaptiveCrossAttention, create_cross_attention
+
     assert AdaptiveCrossAttention is not None
     assert create_cross_attention is not None
 
@@ -45,14 +46,14 @@ def test_optimization_config_cpu():
 
 def test_model_creation():
     """Test that model can be instantiated."""
-    from rgbddepth import RGBDDepth, OptimizationConfig
+    from rgbddepth import OptimizationConfig, RGBDDepth
 
     config = OptimizationConfig(device="cpu")
     model = RGBDDepth(
         encoder="vits",  # Use smallest model for testing
         features=64,
         out_channels=[48, 96, 192, 384],
-        config=config
+        config=config,
     )
 
     assert model is not None
@@ -62,16 +63,12 @@ def test_model_creation():
 
 def test_model_forward_shape():
     """Test model forward pass with dummy data."""
-    from rgbddepth import RGBDDepth, OptimizationConfig
     import torch
 
+    from rgbddepth import OptimizationConfig, RGBDDepth
+
     config = OptimizationConfig(device="cpu")
-    model = RGBDDepth(
-        encoder="vits",
-        features=64,
-        out_channels=[48, 96, 192, 384],
-        config=config
-    )
+    model = RGBDDepth(encoder="vits", features=64, out_channels=[48, 96, 192, 384], config=config)
     model.eval()
 
     # Create dummy inputs
@@ -80,13 +77,16 @@ def test_model_forward_shape():
     rgb = torch.randn(batch_size, 3, height, width)
     depth = torch.randn(batch_size, 1, height, width)
 
-    with torch.no_grad():
-        output = model(rgb, depth)
+    # Concatenate RGB and depth as model expects (B, 4, H, W)
+    inputs = torch.cat([rgb, depth], dim=1)
 
+    with torch.no_grad():
+        output = model(inputs)
+
+    # Output shape is (B, H, W) after squeeze(1)
     assert output.shape[0] == batch_size
-    assert output.shape[1] == 1  # Single channel depth
-    assert output.shape[2] == height
-    assert output.shape[3] == width
+    assert output.shape[1] == height
+    assert output.shape[2] == width
 
 
 def test_get_optimal_config():
@@ -101,6 +101,7 @@ def test_get_optimal_config():
 def test_cli_imports():
     """Test that CLI modules can be imported."""
     from rgbddepth.cli import main_download, main_infer
+
     assert main_download is not None
     assert main_infer is not None
 

@@ -7,11 +7,11 @@ Adaptive attention mechanisms with multiple backend support.
 Supports xformers, torch, and manual implementations with automatic fallback.
 """
 
+from typing import Optional, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, Tuple
-import warnings
 
 
 class AdaptiveCrossAttention(nn.Module):
@@ -57,11 +57,10 @@ class AdaptiveCrossAttention(nn.Module):
         if backend == "xformers":
             try:
                 import xformers.ops as xops
+
                 self.xops = xops
             except ImportError:
-                raise ImportError(
-                    "xformers not available. Install with: pip install xformers"
-                )
+                raise ImportError("xformers not available. Install with: pip install xformers")
 
         # Initialize projection layers (shared across all backends)
         self.q_proj = nn.Linear(embed_dim, embed_dim)
@@ -75,11 +74,7 @@ class AdaptiveCrossAttention(nn.Module):
             # Create a dummy MultiheadAttention for reference
             # but we'll use our custom projections
             self._torch_mha = nn.MultiheadAttention(
-                embed_dim,
-                num_heads,
-                dropout=dropout,
-                batch_first=batch_first,
-                bias=True
+                embed_dim, num_heads, dropout=dropout, batch_first=batch_first, bias=True
             )
 
         self.dropout_layer = nn.Dropout(dropout) if dropout > 0 else nn.Identity()
@@ -142,9 +137,7 @@ class AdaptiveCrossAttention(nn.Module):
 
         # xformers expects (B, N, H, D) format
         out = self.xops.memory_efficient_attention(
-            q, k, v,
-            attn_bias=attn_mask,
-            p=self.dropout if self.training else 0.0
+            q, k, v, attn_bias=attn_mask, p=self.dropout if self.training else 0.0
         )
 
         # Reshape back
@@ -181,9 +174,7 @@ class AdaptiveCrossAttention(nn.Module):
             v_mha = v.transpose(0, 1)
 
         # Compute attention using scaled dot-product
-        out, attn_weights = self._scaled_dot_product_attention(
-            q_mha, k_mha, v_mha, attn_mask
-        )
+        out, attn_weights = self._scaled_dot_product_attention(q_mha, k_mha, v_mha, attn_mask)
 
         # Convert back if needed
         if self.batch_first:
@@ -229,7 +220,7 @@ class AdaptiveCrossAttention(nn.Module):
             # Now: (B, H, N, D)
 
         # Scaled dot-product attention
-        scale = self.head_dim ** -0.5
+        scale = self.head_dim**-0.5
         attn = torch.matmul(q, k.transpose(-2, -1)) * scale
 
         if attn_mask is not None:
@@ -269,7 +260,7 @@ class AdaptiveCrossAttention(nn.Module):
         v = v.reshape(N_k, B, self.num_heads, self.head_dim).permute(1, 2, 0, 3)
 
         # Compute attention scores
-        scale = self.head_dim ** -0.5
+        scale = self.head_dim**-0.5
         attn = torch.matmul(q, k.transpose(-2, -1)) * scale
 
         if attn_mask is not None:
@@ -312,22 +303,20 @@ def create_cross_attention(
             # Try xformers, fall back to torch
             try:
                 import xformers
+
                 backend = "xformers"
-                print(f"Using xformers backend for attention (GPU optimized)")
+                print("Using xformers backend for attention (GPU optimized)")
             except ImportError:
                 backend = "torch"
-                print(f"xformers not available, using torch backend")
+                print("xformers not available, using torch backend")
         elif device_type == "mps":
             # MPS: use manual implementation (better than torch MHA on MPS)
             backend = "manual"
-            print(f"Using manual attention backend (MPS optimized)")
+            print("Using manual attention backend (MPS optimized)")
         else:  # CPU
             backend = "torch"
-            print(f"Using torch backend for attention")
+            print("Using torch backend for attention")
 
     return AdaptiveCrossAttention(
-        embed_dim=embed_dim,
-        num_heads=num_heads,
-        backend=backend,
-        batch_first=True
+        embed_dim=embed_dim, num_heads=num_heads, backend=backend, batch_first=True
     )

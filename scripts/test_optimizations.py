@@ -6,11 +6,14 @@
 Test script to validate optimizations across different configurations.
 """
 
-import torch
-import numpy as np
 import time
+
+import numpy as np
+import torch
+
 from rgbddepth.dpt import RGBDDepth
 from rgbddepth.optimization_config import OptimizationConfig
+
 
 def create_dummy_inputs(batch_size=1, height=518, width=518):
     """Create dummy RGB and depth inputs for testing."""
@@ -26,16 +29,13 @@ def create_dummy_inputs(batch_size=1, height=518, width=518):
 def test_configuration(encoder="vitl", config=None, num_warmup=3, num_iters=10):
     """Test a specific configuration."""
     print(f"\n{'='*60}")
-    print(f"Testing Configuration:")
+    print("Testing Configuration:")
     print(config.summary())
 
     try:
         # Create model
         model = RGBDDepth(
-            encoder=encoder,
-            features=256,
-            out_channels=[256, 512, 1024, 1024],
-            config=config
+            encoder=encoder, features=256, out_channels=[256, 512, 1024, 1024], config=config
         )
         model.eval()
 
@@ -78,10 +78,10 @@ def test_configuration(encoder="vitl", config=None, num_warmup=3, num_iters=10):
             "min": times.min(),
             "max": times.max(),
             "output_shape": pred.shape,
-            "success": True
+            "success": True,
         }
 
-        print(f"\n✓ Test passed!")
+        print("\n✓ Test passed!")
         print(f"  Mean: {result['mean']*1000:.2f}ms ± {result['std']*1000:.2f}ms")
         print(f"  Min:  {result['min']*1000:.2f}ms")
         print(f"  Max:  {result['max']*1000:.2f}ms")
@@ -92,6 +92,7 @@ def test_configuration(encoder="vitl", config=None, num_warmup=3, num_iters=10):
     except Exception as e:
         print(f"\n✗ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return None
 
@@ -108,6 +109,7 @@ def test_all_attention_backends(device="auto"):
     if device == "cuda" or (device == "auto" and torch.cuda.is_available()):
         try:
             import xformers
+
             backends.insert(0, "xformers")
         except ImportError:
             print("xformers not available, skipping xformers tests")
@@ -119,7 +121,7 @@ def test_all_attention_backends(device="auto"):
             device=device,
             attention_backend=backend,
             use_compile=False,  # Disable for testing
-            mixed_precision="fp32"  # Use FP32 for fair comparison
+            mixed_precision="fp32",  # Use FP32 for fair comparison
         )
 
         result = test_configuration(config=config, num_warmup=2, num_iters=5)
@@ -158,82 +160,107 @@ def test_device_specific_optimizations():
     if device == "cuda":
         # Test CUDA optimizations
         configs = [
-            ("Baseline (FP32)", OptimizationConfig(
-                device=device,
-                attention_backend="torch",
-                use_compile=False,
-                mixed_precision="fp32",
-                use_channels_last=False
-            )),
-            ("FP16", OptimizationConfig(
-                device=device,
-                attention_backend="torch",
-                use_compile=False,
-                mixed_precision="fp16",
-                use_channels_last=False
-            )),
-            ("Channels Last", OptimizationConfig(
-                device=device,
-                attention_backend="torch",
-                use_compile=False,
-                mixed_precision="fp32",
-                use_channels_last=True
-            )),
-            ("All Optimizations", OptimizationConfig(
-                device=device,
-                attention_backend="auto",
-                use_compile=False,  # Compile can be flaky in tests
-                mixed_precision="fp16",
-                use_channels_last=True
-            )),
+            (
+                "Baseline (FP32)",
+                OptimizationConfig(
+                    device=device,
+                    attention_backend="torch",
+                    use_compile=False,
+                    mixed_precision="fp32",
+                    use_channels_last=False,
+                ),
+            ),
+            (
+                "FP16",
+                OptimizationConfig(
+                    device=device,
+                    attention_backend="torch",
+                    use_compile=False,
+                    mixed_precision="fp16",
+                    use_channels_last=False,
+                ),
+            ),
+            (
+                "Channels Last",
+                OptimizationConfig(
+                    device=device,
+                    attention_backend="torch",
+                    use_compile=False,
+                    mixed_precision="fp32",
+                    use_channels_last=True,
+                ),
+            ),
+            (
+                "All Optimizations",
+                OptimizationConfig(
+                    device=device,
+                    attention_backend="auto",
+                    use_compile=False,  # Compile can be flaky in tests
+                    mixed_precision="fp16",
+                    use_channels_last=True,
+                ),
+            ),
         ]
     elif device == "mps":
         # Test MPS optimizations
         configs = [
-            ("Baseline", OptimizationConfig(
-                device=device,
-                attention_backend="torch",
-                use_channels_last=False,
-                mixed_precision="fp32"
-            )),
-            ("Manual Attention", OptimizationConfig(
-                device=device,
-                attention_backend="manual",
-                use_channels_last=False,
-                mixed_precision="fp32"
-            )),
-            ("Channels Last", OptimizationConfig(
-                device=device,
-                attention_backend="manual",
-                use_channels_last=True,
-                mixed_precision="fp32"
-            )),
-            ("All Optimizations", OptimizationConfig(
-                device=device,
-                attention_backend="manual",
-                use_channels_last=True,
-                mixed_precision="fp32",
-                fuse_depth_encoder=True
-            )),
+            (
+                "Baseline",
+                OptimizationConfig(
+                    device=device,
+                    attention_backend="torch",
+                    use_channels_last=False,
+                    mixed_precision="fp32",
+                ),
+            ),
+            (
+                "Manual Attention",
+                OptimizationConfig(
+                    device=device,
+                    attention_backend="manual",
+                    use_channels_last=False,
+                    mixed_precision="fp32",
+                ),
+            ),
+            (
+                "Channels Last",
+                OptimizationConfig(
+                    device=device,
+                    attention_backend="manual",
+                    use_channels_last=True,
+                    mixed_precision="fp32",
+                ),
+            ),
+            (
+                "All Optimizations",
+                OptimizationConfig(
+                    device=device,
+                    attention_backend="manual",
+                    use_channels_last=True,
+                    mixed_precision="fp32",
+                    fuse_depth_encoder=True,
+                ),
+            ),
         ]
     else:  # CPU
         configs = [
-            ("Baseline", OptimizationConfig(
-                device=device,
-                use_channels_last=False,
-                mixed_precision="fp32"
-            )),
-            ("Channels Last", OptimizationConfig(
-                device=device,
-                use_channels_last=True,
-                mixed_precision="fp32"
-            )),
-            ("All Optimizations", OptimizationConfig(
-                device=device,
-                use_channels_last=True,
-                mixed_precision="fp32",
-                fuse_depth_encoder=True
-            )),
+            (
+                "Baseline",
+                OptimizationConfig(device=device, use_channels_last=False, mixed_precision="fp32"),
+            ),
+            (
+                "Channels Last",
+                OptimizationConfig(device=device, use_channels_last=True, mixed_precision="fp32"),
+            ),
+            (
+                "All Optimizations",
+                OptimizationConfig(
+                    device=device,
+                    use_channels_last=True,
+                    mixed_precision="fp32",
+                    fuse_depth_encoder=True,
+                ),
+            ),
         ]
 
     results = {}
@@ -267,7 +294,7 @@ def main():
     print("=" * 60)
 
     # Print system info
-    print(f"\nSystem Information:")
+    print("\nSystem Information:")
     print(f"  PyTorch version: {torch.__version__}")
     print(f"  CUDA available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
@@ -277,9 +304,10 @@ def main():
 
     try:
         import xformers
-        print(f"  xformers available: True")
+
+        print("  xformers available: True")
     except ImportError:
-        print(f"  xformers available: False")
+        print("  xformers available: False")
 
     # Run tests
     try:
@@ -298,6 +326,7 @@ def main():
     except Exception as e:
         print(f"\n\nTests failed with error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

@@ -60,9 +60,7 @@ class Block(nn.Module):
             attn_drop=attn_drop,
             proj_drop=drop,
         )
-        self.ls1 = (
-            LayerScale(dim, init_values=init_values) if init_values else nn.Identity()
-        )
+        self.ls1 = LayerScale(dim, init_values=init_values) if init_values else nn.Identity()
         self.drop_path1 = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 
         self.norm2 = norm_layer(dim)
@@ -74,9 +72,7 @@ class Block(nn.Module):
             drop=drop,
             bias=ffn_bias,
         )
-        self.ls2 = (
-            LayerScale(dim, init_values=init_values) if init_values else nn.Identity()
-        )
+        self.ls2 = LayerScale(dim, init_values=init_values) if init_values else nn.Identity()
         self.drop_path2 = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 
         self.sample_drop_ratio = drop_path
@@ -169,9 +165,7 @@ def get_attn_bias_and_cat(x_list, branges=None):
     this will perform the index select, cat the tensors, and provide the attn_bias from cache
     """
     batch_sizes = (
-        [b.shape[0] for b in branges]
-        if branges is not None
-        else [x.shape[0] for x in x_list]
+        [b.shape[0] for b in branges] if branges is not None else [x.shape[0] for x in x_list]
     )
     all_shapes = tuple((b, x.shape[1]) for b, x in zip(batch_sizes, x_list))
     if all_shapes not in attn_bias_cache.keys():
@@ -201,9 +195,7 @@ def drop_add_residual_stochastic_depth_list(
     scaling_vector=None,
 ) -> Tensor:
     # 1) generate random set of indices for dropping samples in the batch
-    branges_scales = [
-        get_branges_scales(x, sample_drop_ratio=sample_drop_ratio) for x in x_list
-    ]
+    branges_scales = [get_branges_scales(x, sample_drop_ratio=sample_drop_ratio) for x in x_list]
     branges = [s[0] for s in branges_scales]
     residual_scale_factors = [s[1] for s in branges_scales]
 
@@ -218,9 +210,7 @@ def drop_add_residual_stochastic_depth_list(
         x_list, branges, residual_list, residual_scale_factors
     ):
         outputs.append(
-            add_residual(
-                x, brange, residual, residual_scale_factor, scaling_vector
-            ).view_as(x)
+            add_residual(x, brange, residual, residual_scale_factor, scaling_vector).view_as(x)
         )
     return outputs
 
@@ -244,17 +234,13 @@ class NestedTensorBlock(Block):
                 x_list,
                 residual_func=attn_residual_func,
                 sample_drop_ratio=self.sample_drop_ratio,
-                scaling_vector=(
-                    self.ls1.gamma if isinstance(self.ls1, LayerScale) else None
-                ),
+                scaling_vector=(self.ls1.gamma if isinstance(self.ls1, LayerScale) else None),
             )
             x_list = drop_add_residual_stochastic_depth_list(
                 x_list,
                 residual_func=ffn_residual_func,
                 sample_drop_ratio=self.sample_drop_ratio,
-                scaling_vector=(
-                    self.ls2.gamma if isinstance(self.ls1, LayerScale) else None
-                ),
+                scaling_vector=(self.ls2.gamma if isinstance(self.ls1, LayerScale) else None),
             )
             return x_list
         else:
@@ -274,9 +260,7 @@ class NestedTensorBlock(Block):
         if isinstance(x_or_x_list, Tensor):
             return super().forward(x_or_x_list)
         elif isinstance(x_or_x_list, list):
-            assert (
-                XFORMERS_AVAILABLE
-            ), "Please install xFormers for nested tensors usage"
+            assert XFORMERS_AVAILABLE, "Please install xFormers for nested tensors usage"
             return self.forward_nested(x_or_x_list)
         else:
             raise AssertionError

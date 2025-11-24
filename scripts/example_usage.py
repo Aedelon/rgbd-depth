@@ -7,21 +7,22 @@ Example usage of the optimized CDM model.
 Demonstrates both automatic and manual configuration.
 """
 
-import torch
 import numpy as np
+import torch
+
 from rgbddepth.dpt import RGBDDepth
 from rgbddepth.optimization_config import (
     OptimizationConfig,
+    get_config_for_inference,
     get_optimal_config,
-    get_config_for_inference
 )
 
 
 def example_auto_config():
     """Example 1: Automatic configuration (recommended for most users)."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 1: Automatic Configuration")
-    print("="*60)
+    print("=" * 60)
 
     # Simply create a config with device='auto'
     # Everything else is automatically configured
@@ -31,10 +32,7 @@ def example_auto_config():
 
     # Create model
     model = RGBDDepth(
-        encoder="vitl",
-        features=256,
-        out_channels=[256, 512, 1024, 1024],
-        config=config
+        encoder="vitl", features=256, out_channels=[256, 512, 1024, 1024], config=config
     )
 
     print("\n✓ Model created with automatic optimizations")
@@ -42,12 +40,13 @@ def example_auto_config():
 
 def example_manual_config():
     """Example 2: Manual configuration for fine-grained control."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 2: Manual Configuration")
-    print("="*60)
+    print("=" * 60)
 
     # Detect available device for this example
     import torch
+
     if torch.cuda.is_available():
         device = "cuda"
         backend = "xformers"  # or "torch" if xformers not available
@@ -72,17 +71,14 @@ def example_manual_config():
         use_channels_last=True,  # Use channels_last memory format
         mixed_precision=precision,
         fuse_depth_encoder=False,  # Keep separate encoders
-        interpolation_mode="bilinear"  # Good balance
+        interpolation_mode="bilinear",  # Good balance
     )
 
     print(config.summary())
 
     # Create model
     model = RGBDDepth(
-        encoder="vitl",
-        features=256,
-        out_channels=[256, 512, 1024, 1024],
-        config=config
+        encoder="vitl", features=256, out_channels=[256, 512, 1024, 1024], config=config
     )
 
     print("\n✓ Model created with manual configuration")
@@ -90,9 +86,9 @@ def example_manual_config():
 
 def example_device_specific():
     """Example 3: Device-specific optimal configurations."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 3: Device-Specific Configurations")
-    print("="*60)
+    print("=" * 60)
 
     # Get optimal config for each device type
     devices = []
@@ -111,9 +107,9 @@ def example_device_specific():
 
 def example_preset_profiles():
     """Example 4: Using preset profiles."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 4: Preset Profiles")
-    print("="*60)
+    print("=" * 60)
 
     # Profile 1: Speed-optimized inference
     print("\n--- Speed-Optimized Inference ---")
@@ -128,9 +124,9 @@ def example_preset_profiles():
 
 def example_compare_backends():
     """Example 5: Comparing attention backends."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 5: Comparing Attention Backends")
-    print("="*60)
+    print("=" * 60)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -138,6 +134,7 @@ def example_compare_backends():
     if device == "cuda":
         try:
             import xformers
+
             backends.insert(0, "xformers")
         except ImportError:
             print("Note: xformers not available, skipping xformers comparison")
@@ -145,16 +142,13 @@ def example_compare_backends():
     for backend in backends:
         print(f"\n--- Backend: {backend} ---")
         try:
-            config = OptimizationConfig(
-                device=device,
-                attention_backend=backend
-            )
+            config = OptimizationConfig(device=device, attention_backend=backend)
 
             model = RGBDDepth(
                 encoder="vits",  # Use smaller model for quick testing
                 features=64,
                 out_channels=[48, 96, 192, 384],
-                config=config
+                config=config,
             )
             print(f"✓ {backend} backend initialized successfully")
         except Exception as e:
@@ -163,19 +157,16 @@ def example_compare_backends():
 
 def example_full_inference():
     """Example 6: Full inference pipeline with optimizations."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 6: Full Inference Pipeline")
-    print("="*60)
+    print("=" * 60)
 
     # Create optimized model
     config = get_config_for_inference(device="auto")
     print(config.summary())
 
     model = RGBDDepth(
-        encoder="vitl",
-        features=256,
-        out_channels=[256, 512, 1024, 1024],
-        config=config
+        encoder="vitl", features=256, out_channels=[256, 512, 1024, 1024], config=config
     )
     model.eval()
 
@@ -190,7 +181,7 @@ def example_full_inference():
     with torch.no_grad():
         pred_depth = model.infer_image(rgb, depth, input_size=518)
 
-    print(f"3. Prediction complete!")
+    print("3. Prediction complete!")
     print(f"   Input shape: {rgb.shape}")
     print(f"   Output shape: {pred_depth.shape}")
     print(f"   Depth range: [{pred_depth.min():.3f}, {pred_depth.max():.3f}]")
@@ -204,9 +195,9 @@ def example_full_inference():
 
 def example_memory_efficient():
     """Example 7: Memory-efficient configuration for large models."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Example 7: Memory-Efficient Configuration")
-    print("="*60)
+    print("=" * 60)
 
     # Configuration for when you're running out of memory
     config = OptimizationConfig(
@@ -228,9 +219,9 @@ def example_memory_efficient():
 
 def main():
     """Run all examples."""
-    print("\n" + "#"*60)
+    print("\n" + "#" * 60)
     print("# CDM Optimization Examples")
-    print("#"*60)
+    print("#" * 60)
 
     examples = [
         ("Automatic Configuration", example_auto_config),
@@ -254,11 +245,12 @@ def main():
         except Exception as e:
             print(f"\n✗ Example '{name}' failed: {e}")
             import traceback
+
             traceback.print_exc()
 
-    print("\n" + "#"*60)
+    print("\n" + "#" * 60)
     print("# All examples completed!")
-    print("#"*60)
+    print("#" * 60)
 
 
 if __name__ == "__main__":

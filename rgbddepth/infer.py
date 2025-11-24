@@ -67,9 +67,7 @@ def parse_arguments():
     )
 
     # Input/output arguments
-    parser.add_argument(
-        "--rgb-image", type=str, required=True, help="Path to the RGB input image"
-    )
+    parser.add_argument("--rgb-image", type=str, required=True, help="Path to the RGB input image")
     parser.add_argument(
         "--depth-image", type=str, required=True, help="Path to the depth input image"
     )
@@ -79,9 +77,7 @@ def parse_arguments():
         default="output.png",
         help="Output visualization image path",
     )
-    parser.add_argument(
-        "--input-size", type=int, default=518, help="Input size for inference"
-    )
+    parser.add_argument("--input-size", type=int, default=518, help="Input size for inference")
 
     # Depth processing arguments
     parser.add_argument(
@@ -90,9 +86,7 @@ def parse_arguments():
         default=1000.0,
         help="Scale factor for depth values",
     )
-    parser.add_argument(
-        "--max-depth", type=float, default=6.0, help="Maximum valid depth value"
-    )
+    parser.add_argument("--max-depth", type=float, default=6.0, help="Maximum valid depth value")
     parser.add_argument(
         "--image-min", type=float, default=0.1, help="Minimum depth for visualization"
     )
@@ -195,9 +189,7 @@ def image_grid(imgs, rows, cols):
         col_idx = i % cols
         row_idx = i // cols
         grid.paste(
-            Image.fromarray(img.astype(np.uint8)).resize(
-                (w, h), resample=Image.BILINEAR
-            ),
+            Image.fromarray(img.astype(np.uint8)).resize((w, h), resample=Image.BILINEAR),
             box=(col_idx * w, row_idx * h),
         )
     return np.array(grid)
@@ -300,9 +292,7 @@ def create_visualization(rgb_src, depth_rs, pred, image_min, image_max):
     valid = depth_rs > 0
     depth_error[valid] = np.abs(depth_rs[valid] - pred[valid]) / depth_rs[valid]
 
-    error_colored = colorize_depth_maps(
-        depth_error, min_depth=0, max_depth=1, cmap="Spectral"
-    )
+    error_colored = colorize_depth_maps(depth_error, min_depth=0, max_depth=1, cmap="Spectral")
     error_colored = np.rollaxis(error_colored[0], 0, 3)
     error_colored = (error_colored * 255).astype(np.uint8)
 
@@ -340,17 +330,13 @@ def inference(args):
         print(f"Avg latency: {duration:.2f} ms")
 
     pred = model.infer_image(rgb_src, simi_depth_low_res, input_size=args.input_size)
-    print(
-        f"Prediction info: shape={pred.shape}, min={pred.min():.4f}, max={pred.max():.4f}"
-    )
+    print(f"Prediction info: shape={pred.shape}, min={pred.min():.4f}, max={pred.max():.4f}")
 
     pred = 1 / pred
 
     image_min = args.image_min
     image_max = args.image_max
-    artifact = create_visualization(
-        rgb_src, depth_low_res, pred, image_min, image_max
-    )
+    artifact = create_visualization(rgb_src, depth_low_res, pred, image_min, image_max)
 
     Image.fromarray(artifact).save(args.output)
     print(f"✓ Output saved to: {args.output}")

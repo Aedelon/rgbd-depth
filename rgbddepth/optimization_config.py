@@ -7,10 +7,11 @@ Device-specific optimization configuration for CDM models.
 Provides automatic device detection and manual override capabilities.
 """
 
-import torch
-from dataclasses import dataclass
-from typing import Optional, Literal
 import warnings
+from dataclasses import dataclass
+from typing import Literal, Optional
+
+import torch
 
 
 @dataclass
@@ -52,8 +53,15 @@ class OptimizationConfig:
         if self.device == "auto":
             self.device = self._detect_device()
 
-        # Auto-configure based on device
+        # Validate device
+        valid_devices = ["cuda", "mps", "cpu"]
         device_type = self.device.split(":")[0]  # Handle cuda:0 format
+        if device_type not in valid_devices:
+            raise ValueError(
+                f"Invalid device '{self.device}'. Must be one of: {valid_devices} or 'auto'"
+            )
+
+        # Auto-configure based on device
 
         # Attention backend
         if self.attention_backend == "auto":
@@ -74,8 +82,16 @@ class OptimizationConfig:
         if self.fuse_depth_encoder is None:
             self.fuse_depth_encoder = self._should_fuse_encoder(device_type)
 
-        # Mixed precision
+        # Mixed precision - resolve to actual value
         self.dtype = self._resolve_dtype(device_type)
+        # Update mixed_precision to reflect actual resolved value
+        if self.mixed_precision == "auto":
+            if self.dtype == torch.float16:
+                self.mixed_precision = "fp16"
+            elif self.dtype == torch.bfloat16:
+                self.mixed_precision = "bf16"
+            else:
+                self.mixed_precision = "fp32"
 
         # Interpolation mode - use bicubic only on CUDA
         if self.interpolation_mode == "bicubic" and device_type != "cuda":
@@ -99,6 +115,7 @@ class OptimizationConfig:
             # Try xformers first, fall back to torch
             try:
                 import xformers
+
                 return "xformers"
             except ImportError:
                 return "torch"
@@ -158,15 +175,21 @@ class OptimizationConfig:
 
     def _resolve_dtype(self, device_type: str) -> torch.dtype:
         """Resolve mixed precision dtype."""
+        # Validate mixed_precision value
+        valid_precisions = ["auto", "fp16", "bf16", "fp32"]
+        if self.mixed_precision not in valid_precisions:
+            raise ValueError(
+                f"Invalid mixed_precision '{self.mixed_precision}'. "
+                f"Must be one of: {valid_precisions}"
+            )
+
         if self.mixed_precision == "fp32":
             return torch.float32
         elif self.mixed_precision == "fp16":
             return torch.float16
         elif self.mixed_precision == "bf16":
             if not torch.cuda.is_bf16_supported() and device_type == "cuda":
-                warnings.warn(
-                    "BF16 not supported on this GPU, falling back to FP32"
-                )
+                warnings.warn("BF16 not supported on this GPU, falling back to FP32")
                 return torch.float32
             return torch.bfloat16
         else:  # auto
@@ -176,11 +199,8 @@ class OptimizationConfig:
                     return torch.bfloat16
                 return torch.float16
             elif device_type == "mps":
-                # Use FP32 on MPS by default
-                # While FP16 saves memory (~2x), it can be slower on MPS for some models
-                # due to conversion overhead and lack of dedicated FP16 hardware
-                # Users can manually enable FP16 with mixed_precision='fp16' for memory savings
-                return torch.float32
+                # Use FP16 on MPS by default for memory savings (~2x)
+                return torch.float16
             else:
                 # CPU: use FP32 only (FP16 is slower on CPU)
                 return torch.float32
@@ -196,7 +216,7 @@ class OptimizationConfig:
             f"Mixed Precision: {self.mixed_precision} ({self.dtype})",
             f"Fuse Depth Encoder: {'✓' if self.fuse_depth_encoder else '✗'}",
             f"Interpolation Mode: {self.interpolation_mode}",
-            "=" * 38
+            "=" * 38,
         ]
         return "\n".join(lines)
 
@@ -214,8 +234,7 @@ def get_optimal_config(device: str = "auto") -> OptimizationConfig:
 
 
 def get_config_for_inference(
-    device: str = "auto",
-    prefer_quality: bool = False
+    device: str = "auto", prefer_quality: bool = False
 ) -> OptimizationConfig:
     """Get configuration optimized for inference.
 

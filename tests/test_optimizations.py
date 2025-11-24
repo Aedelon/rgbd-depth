@@ -6,6 +6,7 @@
 
 import pytest
 import torch
+
 from rgbddepth import OptimizationConfig
 
 
@@ -41,7 +42,7 @@ class TestOptimizationConfig:
         config = OptimizationConfig(device="mps")
         assert config.device == "mps"
         assert config.attention_backend == "manual"
-        assert config.mixed_precision == "fp32"
+        assert config.mixed_precision == "fp16"
 
     def test_cpu_config(self):
         """Test CPU configuration."""
@@ -54,10 +55,7 @@ class TestOptimizationConfig:
     def test_manual_override(self):
         """Test manual configuration override."""
         config = OptimizationConfig(
-            device="cpu",
-            attention_backend="manual",
-            use_compile=False,
-            mixed_precision="fp32"
+            device="cpu", attention_backend="manual", use_compile=False, mixed_precision="fp32"
         )
 
         assert config.device == "cpu"

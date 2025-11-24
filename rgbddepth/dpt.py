@@ -7,18 +7,19 @@ Unified RGBDDepth model with built-in device-specific optimizations.
 This merges the previous optimized implementation into the main class.
 """
 
+from typing import Optional
+
 import cv2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.transforms import Compose
-from typing import Optional
 
+from .attention import create_cross_attention
 from .dinov2 import DINOv2
+from .optimization_config import OptimizationConfig
 from .util.blocks import FeatureFusionBlock, _make_scratch
 from .util.transform import NormalizeImage, PrepareForNet, Resize
-from .attention import create_cross_attention
-from .optimization_config import OptimizationConfig
 
 
 def _make_fusion_block(features, use_bn, size=None):
@@ -303,9 +304,7 @@ class RGBDDepth(nn.Module):
         )
 
         features = []
-        for f_rgb, f_depth, crossAtt in zip(
-            features_rgb, features_depth, self.crossAtts
-        ):
+        for f_rgb, f_depth, crossAtt in zip(features_rgb, features_depth, self.crossAtts):
             B, N, C = f_rgb[0].shape
 
             token_feat = torch.stack([f_rgb[0], f_depth[0]], dim=2)
