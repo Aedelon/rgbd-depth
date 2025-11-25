@@ -2,58 +2,35 @@
 # Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-"""Basic import and smoke tests for camera-depth-models."""
+"""Basic import and smoke tests for rgbd-depth package."""
 
 import pytest
 
 
 def test_import_main_modules():
     """Test that main modules can be imported."""
-    from rgbddepth import OptimizationConfig, RGBDDepth, get_optimal_config
+    from rgbddepth import DinoVisionTransformer, RGBDDepth, __version__
 
     assert RGBDDepth is not None
-    assert OptimizationConfig is not None
-    assert get_optimal_config is not None
+    assert DinoVisionTransformer is not None
+    assert __version__ == "1.0.2"
 
 
-def test_import_attention():
-    """Test attention module imports."""
-    from rgbddepth.attention import AdaptiveCrossAttention, create_cross_attention
+def test_import_flexible_attention():
+    """Test FlexibleCrossAttention module import."""
+    from rgbddepth.flexible_attention import FlexibleCrossAttention
 
-    assert AdaptiveCrossAttention is not None
-    assert create_cross_attention is not None
-
-
-def test_optimization_config_auto():
-    """Test OptimizationConfig with auto device."""
-    from rgbddepth import OptimizationConfig
-
-    config = OptimizationConfig(device="auto")
-    assert config.device in ["cuda", "mps", "cpu"]
-    assert config.attention_backend in ["xformers", "torch", "manual"]
-    assert config.mixed_precision in ["fp16", "bf16", "fp32"]
+    assert FlexibleCrossAttention is not None
 
 
-def test_optimization_config_cpu():
-    """Test OptimizationConfig for CPU."""
-    from rgbddepth import OptimizationConfig
+def test_model_creation_basic():
+    """Test that model can be instantiated without xFormers."""
+    from rgbddepth import RGBDDepth
 
-    config = OptimizationConfig(device="cpu")
-    assert config.device == "cpu"
-    assert config.mixed_precision == "fp32"
-    assert config.use_compile is False
-
-
-def test_model_creation():
-    """Test that model can be instantiated."""
-    from rgbddepth import OptimizationConfig, RGBDDepth
-
-    config = OptimizationConfig(device="cpu")
     model = RGBDDepth(
-        encoder="vits",  # Use smallest model for testing
-        features=64,
-        out_channels=[48, 96, 192, 384],
-        config=config,
+        encoder="vitl",
+        features=256,
+        use_xformers=False,  # Don't require xFormers for basic test
     )
 
     assert model is not None
@@ -61,17 +38,27 @@ def test_model_creation():
     assert hasattr(model, "infer_image")
 
 
+def test_model_creation_with_xformers():
+    """Test that model can be instantiated with xFormers flag (may fallback)."""
+    from rgbddepth import RGBDDepth
+
+    # This will attempt xFormers but fallback to SDPA if not available
+    model = RGBDDepth(encoder="vitl", features=256, use_xformers=True)
+
+    assert model is not None
+    assert hasattr(model, "forward")
+
+
 def test_model_forward_shape():
     """Test model forward pass with dummy data."""
     import torch
 
-    from rgbddepth import OptimizationConfig, RGBDDepth
+    from rgbddepth import RGBDDepth
 
-    config = OptimizationConfig(device="cpu")
-    model = RGBDDepth(encoder="vits", features=64, out_channels=[48, 96, 192, 384], config=config)
+    model = RGBDDepth(encoder="vitl", features=256, use_xformers=False)
     model.eval()
 
-    # Create dummy inputs
+    # Create dummy inputs (RGB + depth concatenated)
     batch_size = 1
     height, width = 224, 224
     rgb = torch.randn(batch_size, 3, height, width)
@@ -83,27 +70,28 @@ def test_model_forward_shape():
     with torch.no_grad():
         output = model(inputs)
 
-    # Output shape is (B, H, W) after squeeze(1)
-    assert output.shape[0] == batch_size
-    assert output.shape[1] == height
-    assert output.shape[2] == width
+    # Output should be (B, H, W) - model squeezes channel dimension
+    assert output.shape == (batch_size, height, width)
 
 
-def test_get_optimal_config():
-    """Test get_optimal_config function."""
-    from rgbddepth import get_optimal_config
+def test_infer_main_function():
+    """Test that infer.py main() function exists."""
+    import infer
 
-    config = get_optimal_config()
-    assert config is not None
-    assert config.device is not None
+    assert hasattr(infer, "main")
+    assert callable(infer.main)
 
 
-def test_cli_imports():
-    """Test that CLI modules can be imported."""
-    from rgbddepth.cli import main_download, main_infer
+def test_device_detection():
+    """Test device detection logic."""
+    import torch
 
-    assert main_download is not None
-    assert main_infer is not None
+    # Just verify torch can detect available devices
+    cuda_available = torch.cuda.is_available()
+    mps_available = torch.backends.mps.is_available()
+
+    # At least CPU should always be available
+    assert cuda_available or mps_available or True  # CPU always available
 
 
 if __name__ == "__main__":

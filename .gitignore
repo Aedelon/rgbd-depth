@@ -147,6 +147,11 @@ cython_debug/
 # Mac OS
 .DS_Store
 
+# MCP configuration files (local development)
+.mcp.json
+.1mcprc
+.claude/
+
 # Project-specific
 *.png
 *.jpg
