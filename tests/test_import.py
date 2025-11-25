@@ -76,7 +76,16 @@ def test_model_forward_shape():
 
 def test_infer_main_function():
     """Test that infer.py main() function exists."""
-    import infer
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    # Load infer.py as a module
+    infer_path = Path(__file__).parent.parent / "infer.py"
+    spec = importlib.util.spec_from_file_location("infer", infer_path)
+    infer = importlib.util.module_from_spec(spec)
+    sys.modules["infer"] = infer
+    spec.loader.exec_module(infer)
 
     assert hasattr(infer, "main")
     assert callable(infer.main)

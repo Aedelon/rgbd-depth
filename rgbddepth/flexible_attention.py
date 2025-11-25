@@ -43,10 +43,10 @@ class FlexibleCrossAttention(nn.MultiheadAttention):
             bool: True if xFormers can be imported, False otherwise
         """
         try:
-            import xformers.ops
+            import importlib.util
 
-            return True
-        except ImportError:
+            return importlib.util.find_spec("xformers.ops") is not None
+        except (ImportError, ValueError):
             return False
 
     def forward(self, query, key, value, **kwargs):
