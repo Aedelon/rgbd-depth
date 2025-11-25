@@ -7,13 +7,20 @@ import os
 import sys
 
 import cv2
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from PIL import Image
 
 from rgbddepth.dpt import RGBDDepth
+
+# Optional matplotlib import for visualization
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
 
 # Device will be set after parsing arguments
 DEVICE = None
@@ -56,6 +63,11 @@ def colorize(value, vmin=None, vmax=None, cmap="Spectral"):
     Returns:
         RGB image array for visualization
     """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError(
+            "matplotlib is required for colorize function. Install with: pip install matplotlib"
+        )
+
     # Skip processing if input is already RGB
     if value.ndim > 2:
         if value.shape[-1] > 1:
@@ -356,6 +368,11 @@ def colorize_depth_maps(depth_map, min_depth, max_depth, cmap="Spectral", valid_
     """
     Colorize depth maps.
     """
+    if not MATPLOTLIB_AVAILABLE:
+        raise ImportError(
+            "matplotlib is required for colorize_depth_maps function. Install with: pip install matplotlib"
+        )
+
     assert len(depth_map.shape) >= 2, "Invalid dimension"
 
     if isinstance(depth_map, np.ndarray):

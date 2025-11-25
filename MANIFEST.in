@@ -2,9 +2,10 @@
 include README.md
 include LICENSE
 include OPTIMIZATION.md
+include CHANGELOG.md
 
-# Include example data (if exists)
-recursive-include input_data *.png *.jpg
+# Include CLI script
+include infer.py
 
 # Exclude unnecessary files
 exclude .gitignore
@@ -12,6 +13,9 @@ exclude *.bak
 recursive-exclude tests *
 recursive-exclude .github *
 recursive-exclude __pycache__ *
+recursive-exclude input_data *
 global-exclude *.pyc
 global-exclude *.pyo
+global-exclude *.png
+global-exclude *.jpg
 global-exclude .DS_Store
