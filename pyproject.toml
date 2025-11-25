@@ -3,23 +3,29 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "camera-depth-models"
-version = "1.0.1"
-description = "Camera Depth Models for accurate metric depth estimation from RGB-D sensors"
+name = "rgbd-depth"
+version = "1.0.2"
+description = "Optimized RGB-D depth refinement using Vision Transformers with CUDA, MPS, and CPU support"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Manipulation as in Simulation Contributors"}
-    ,{name = "Aedelon"}
+    {name = "ByteDance Research"},
+    {name = "Aedelon", email = "delanoe.pirard.pro@gmail.com"}
+]
+maintainers = [
+    {name = "Aedelon", email = "delanoe.pirard.pro@gmail.com"}
 ]
 keywords = [
-    "depth estimation",
-    "computer vision",
+    "depth-estimation",
+    "rgbd",
+    "vision-transformer",
+    "pytorch",
+    "computer-vision",
     "robotics",
     "sim-to-real",
-    "rgb-d",
-    "vision transformer"
+    "xformers",
+    "mixed-precision"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -37,28 +43,25 @@ classifiers = [
 ]
 
 dependencies = [
-    "torch>=1.8.0",
-    "torchvision>=0.9.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
     "opencv-python>=4.5.0",
-    "numpy>=1.19.0",
-    "pillow>=8.0.0",
-    "matplotlib>=3.0.0",
+    "numpy>=1.20.0",
+    "pillow>=9.0.0",
 ]
 
 [project.optional-dependencies]
-# CUDA optimizations (Linux/Windows with NVIDIA GPU)
-cuda = [
+# CUDA optimizations (xFormers for ~8% speedup)
+xformers = [
     "xformers>=0.0.20; platform_system != 'Darwin'",
-    "triton>=2.1.0; platform_system != 'Darwin'",
 ]
 
 # Development tools
 dev = [
     "pytest>=7.0.0",
-    "black>=22.0.0",
-    "isort>=5.10.0",
-    "ruff>=0.1.0",
-    "pre-commit>=3.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
 ]
 
 # Model downloads from HuggingFace
@@ -69,25 +72,23 @@ download = [
 # Everything
 all = [
     "xformers>=0.0.20; platform_system != 'Darwin'",
-    "triton>=2.1.0; platform_system != 'Darwin'",
     "pytest>=7.0.0",
-    "black>=22.0.0",
-    "isort>=5.10.0",
-    "ruff>=0.1.0",
-    "pre-commit>=3.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
     "huggingface-hub>=0.16.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/manipulation-as-in-simulation/camera-depth-models"
-Documentation = "https://github.com/manipulation-as-in-simulation/camera-depth-models#readme"
-Repository = "https://github.com/manipulation-as-in-simulation/camera-depth-models"
-"Bug Tracker" = "https://github.com/manipulation-as-in-simulation/camera-depth-models/issues"
+Homepage = "https://github.com/Aedelon/camera-depth-models"
+Repository = "https://github.com/Aedelon/camera-depth-models"
+Documentation = "https://github.com/Aedelon/camera-depth-models/blob/main/README.md"
+"Bug Tracker" = "https://github.com/Aedelon/camera-depth-models/issues"
+"Original Research" = "https://github.com/bytedance/camera-depth-models"
 "Paper" = "https://manipulation-as-in-simulation.github.io/"
 
 [project.scripts]
-cdm-infer = "rgbddepth.cli:main_infer"
-cdm-download = "rgbddepth.cli:main_download"
+rgbd-depth = "infer:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -1,13 +1,17 @@
 # Include documentation
 include README.md
 include LICENSE
-include docs/OPTIMIZATIONS.md
-include docs/CHEATSHEET.md
+include OPTIMIZATION.md
 
-# Include example data
-recursive-include example_data *.png *.jpg
+# Include example data (if exists)
+recursive-include input_data *.png *.jpg
 
 # Exclude unnecessary files
 exclude .gitignore
+exclude *.bak
 recursive-exclude tests *
 recursive-exclude .github *
+recursive-exclude __pycache__ *
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude .DS_Store

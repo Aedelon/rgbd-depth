@@ -493,11 +493,13 @@ def inference(args):
     print(f"Output saved to: {args.output}")
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the rgbd-depth CLI."""
     # Parse command line arguments
     args = parse_arguments()
 
     # Set device based on user choice
+    global DEVICE
     if args.device == "auto":
         DEVICE = (
             "cuda"
@@ -521,3 +523,7 @@ if __name__ == "__main__":
 
     # Run inference
     inference(args)
+
+
+if __name__ == "__main__":
+    main()
