@@ -2,6 +2,9 @@
 
 Optimized Python package for RGB-D depth refinement using Vision Transformer encoders. This implementation is aligned with the [ByteDance CDM reference implementation](https://github.com/bytedance/camera-depth-models) with additional performance optimizations for CUDA, MPS (Apple Silicon), and CPU.
 
+[![Tests](https://github.com/Aedelon/camera-depth-models/actions/workflows/test.yml/badge.svg)](https://github.com/Aedelon/camera-depth-models/actions/workflows/test.yml)
+[![PyPI version](https://img.shields.io/pypi/v/rgbd-depth.svg)](https://pypi.org/project/rgbd-depth/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/rgbd-depth.svg)](https://pypi.org/project/rgbd-depth/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
@@ -16,6 +19,28 @@ Camera Depth Models (CDMs) are sensor-specific depth models trained to produce c
 - 🎯 **Mixed precision support**: FP16 (CUDA/MPS), BF16 (CUDA)
 - 🔧 **Better CLI**: Device selection, optimization control, precision modes
 - 📦 **Easy installation**: Single `pip install` command
+
+## Why This Package?
+
+This is an **optimized, production-ready** version of ByteDance's Camera Depth Models with several improvements:
+
+| Feature | ByteDance Original | This Package |
+|---------|-------------------|--------------|
+| **Installation** | Manual setup | `pip install rgbd-depth` |
+| **CUDA Optimization** | Basic | xFormers (~8% faster) + torch.compile |
+| **Apple Silicon (MPS)** | Not optimized | Native support with fallbacks |
+| **Mixed Precision** | Manual | Automatic FP16/BF16 with `--precision` flag |
+| **CLI** | Basic | Enhanced with device selection, optimization control |
+| **Documentation** | Minimal | Comprehensive guides (README + OPTIMIZATION.md) |
+| **Testing** | None | CI/CD with automated tests |
+| **PyPI Package** | No | ✅ Yes (`rgbd-depth`) |
+
+**Choose this package if you want:**
+- 🚀 Faster inference on CUDA (xFormers) or Apple Silicon (MPS)
+- 🎯 Easy mixed precision (FP16/BF16) without code changes
+- 📦 Simple installation via PyPI
+- 🔧 Production-ready CLI with device/precision control
+- ✅ Maintained with CI/CD and tests
 
 ### Key Features
 

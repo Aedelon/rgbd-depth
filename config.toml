@@ -1,9 +1,0 @@
-# .codex/config.toml
-[mcp_servers.filesystem]
-type = "stdio"
-command = "npx"
-args = [
-  "-y",
-  "@modelcontextprotocol/server-filesystem",
-  "/Users/aedelon/Workspace/mon-projet"
-]

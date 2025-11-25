@@ -1,5 +1,0 @@
-# .1mcprc (dans le repo)
-[mcp_servers.filesystem]
-type = "stdio"
-command = "npx"
-args = ["-y","@modelcontextprotocol/server-filesystem","./"]
