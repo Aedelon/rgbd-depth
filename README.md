@@ -1,8 +1,20 @@
+---
+title: rgbd-depth
+emoji: 🎨
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: "4.44.0"
+app_file: app.py
+pinned: false
+license: apache-2.0
+---
+
 # Camera Depth Models (CDM)
 
 Optimized Python package for RGB-D depth refinement using Vision Transformer encoders. This implementation is aligned with the [ByteDance CDM reference implementation](https://github.com/bytedance/camera-depth-models) with additional performance optimizations for CUDA, MPS (Apple Silicon), and CPU.
 
-[![Tests](https://github.com/Aedelon/camera-depth-models/actions/workflows/test.yml/badge.svg)](https://github.com/Aedelon/camera-depth-models/actions/workflows/test.yml)
+[![Tests](https://github.com/Aedelon/rgbd-depth/actions/workflows/test.yml/badge.svg)](https://github.com/Aedelon/rgbd-depth/actions/workflows/test.yml)
 [![PyPI version](https://img.shields.io/pypi/v/rgbd-depth.svg)](https://pypi.org/project/rgbd-depth/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/rgbd-depth.svg)](https://pypi.org/project/rgbd-depth/)
 [![Hugging Face Spaces](https://img.shields.io/badge/🤗%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/Aedelon/rgbd-depth)
@@ -14,7 +26,9 @@ Optimized Python package for RGB-D depth refinement using Vision Transformer enc
 
 [![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm.svg)](https://huggingface.co/spaces/Aedelon/rgbd-depth)
 
-Try rgbd-depth directly in your browser with our interactive Gradio demo! No installation required.
+Try **rgbd-depth** directly in your browser with our interactive Gradio demo—no installation required.
+
+**Available on Hugging Face Spaces:** Upload your RGB and depth images, adjust parameters (camera model, precision, resolution), and get refined depth maps instantly. Models are automatically downloaded from Hugging Face Hub on first use.
 
 ## Overview
 
@@ -73,6 +87,30 @@ Supported ViT encoder sizes:
 
 All pretrained models we provide are based on `vitl`.
 
+## 🌐 Hugging Face Spaces Demo
+
+The easiest way to try rgbd-depth is via **Hugging Face Spaces**—completely free, no installation needed:
+
+1. **Open the [interactive demo](https://huggingface.co/spaces/Aedelon/rgbd-depth)**
+2. **Upload** an RGB image and a depth map (PNG or JPG)
+3. **Configure** camera model, precision, and visualization options
+4. **Click "Refine Depth"** and download the result
+
+**What happens:**
+- Models are auto-downloaded from Hugging Face Hub on first use
+- Runs on free CPU hardware (inference: ~10-30s)
+- GPU hardware available for faster processing (~2-5s)
+- All computations are done server-side—your images stay private
+
+**Limitations (HF Spaces CPU):**
+- No xFormers optimization (CUDA-only)
+- Inference slower than local GPU
+- Perfect for testing and prototyping
+
+For production workflows or faster inference, use the local installation below.
+
+> **📌 Note:** This README is optimized for [GitHub](https://github.com/Aedelon/rgbd-depth), [PyPI](https://pypi.org/project/rgbd-depth/), and [Hugging Face Spaces](https://huggingface.co/spaces/Aedelon/rgbd-depth). The YAML metadata (top of file) is auto-detected by HF Spaces and not displayed.
+
 ## Installation
 
 ### From PyPI (recommended)
@@ -85,8 +123,8 @@ pip install rgbd-depth
 pip install rgbd-depth[xformers]
 
 # Development installation
-git clone https://github.com/Aedelon/camera-depth-models.git
-cd camera-depth-models
+git clone https://github.com/Aedelon/rgbd-depth.git
+cd rgbd-depth
 pip install -e .
 ```
 
@@ -96,6 +134,14 @@ pip install -e .
 - OpenCV, NumPy, Pillow
 
 ## Quick Start
+
+### Easiest: No Installation (HF Spaces)
+
+👉 **[Open interactive demo in your browser](https://huggingface.co/spaces/Aedelon/rgbd-depth)** ← Start here!
+
+### Local Installation
+
+After `pip install rgbd-depth`:
 
 ```bash
 # CUDA (optimizations auto-enabled, FP16 for best speed)
@@ -108,7 +154,7 @@ python infer.py --input rgb.png --depth depth.png --device mps
 python infer.py --input rgb.png --depth depth.png --device cpu
 ```
 
-> Example images are provided in `input_data/`. Pre-trained models can be downloaded from [Hugging Face](https://huggingface.co/collections/depth-anything/camera-depth-models-68b521181dedd223f4b020db).
+> Example images are provided in `example_data/`. Pre-trained models can be downloaded from [Hugging Face](https://huggingface.co/collections/depth-anything/camera-depth-models-68b521181dedd223f4b020db).
 
 ## Usage
 
@@ -312,4 +358,8 @@ If you use CDM in your research, please cite:
 
 ## License
 
-This project is licensed under the Apache 2.0 License. See [LICENSE](../LICENSE) for details.
+This project is licensed under the Apache 2.0 License. See [LICENSE](LICENSE) for details.
+
+---
+
+**Available on:** [GitHub](https://github.com/Aedelon/rgbd-depth) | [PyPI](https://pypi.org/project/rgbd-depth/) | [HF Spaces](https://huggingface.co/spaces/Aedelon/rgbd-depth)
