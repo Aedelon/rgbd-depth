@@ -8,9 +8,10 @@ opencv-python>=4.5.0
 numpy>=1.20.0
 Pillow>=9.0.0
 
-# Gradio demo (6.x for modern huggingface_hub compatibility, requires Python 3.10+)
+# Gradio demo (6.x requires Python 3.10+)
 gradio>=6.0.0
 matplotlib>=3.5.0
 
 # Model downloads from HuggingFace
-huggingface-hub>=0.20.0
+# Pin to <1.0 to keep HfFolder (required by Gradio's oauth module)
+huggingface-hub>=0.20.0,<1.0.0
