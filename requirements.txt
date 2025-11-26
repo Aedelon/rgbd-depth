@@ -8,8 +8,8 @@ opencv-python>=4.5.0
 numpy>=1.20.0
 Pillow>=9.0.0
 
-# Gradio demo (6.x requires Python 3.10+)
-gradio>=6.0.0
+# Gradio demo (pin to 4.44.1+ to avoid JSON schema bug in 4.44.0)
+gradio>=4.44.1,<5.0.0
 matplotlib>=3.5.0
 
 # Model downloads from HuggingFace
