@@ -1,15 +1,17 @@
 # Hugging Face Spaces requirements
-# Updated 2025-11-27: Force rebuild with Gradio 4.44.1+
 torch>=2.0.0
 torchvision>=0.15.0
 opencv-python>=4.5.0
 numpy>=1.20.0
 Pillow>=9.0.0
 
-# Gradio demo (pin to exact 4.44.1 to avoid JSON schema bug in 4.44.0)
-gradio==4.44.1
+# Fix for JSON schema bug (workaround)
+# HF Spaces backend has Gradio 5/FastAPI components that conflict with newer pydantic
+pydantic==2.10.6
+
+# Gradio demo
+gradio>=4.44.1,<5.0.0
 matplotlib>=3.5.0
 
-# Model downloads from HuggingFace
-# Pin to exact version for stability
-huggingface-hub==0.26.5
+# Model downloads
+huggingface-hub>=0.20.0,<1.0.0
