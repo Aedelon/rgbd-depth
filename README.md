@@ -236,7 +236,7 @@ python infer.py --input rgb.png --depth depth.png --device cpu
 
 ```python
 import torch
-from rgbddepth.dpt import RGBDDepth
+from rgbddepth import RGBDDepth
 import cv2
 import numpy as np
 

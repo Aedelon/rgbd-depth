@@ -9,6 +9,7 @@ on:
       - 'app.py'
       - 'requirements.txt'
       - 'README.md'
+      - 'example_data/**'
       - '.github/workflows/deploy-hf.yml'
 
 jobs:
@@ -39,6 +40,7 @@ jobs:
           cp ../requirements.txt .
           cp ../app.py .
           cp -r ../rgbddepth .
+          cp -r ../example_data .
 
           # Commit and push if there are changes
           git add .
