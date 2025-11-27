@@ -35,6 +35,11 @@ jobs:
           # Configure HF git with token
           git remote set-url origin https://user:$HF_TOKEN@huggingface.co/spaces/Aedelon/rgbd-depth
 
+          # Setup Git LFS for binary files
+          git lfs install
+          git lfs track "*.png" "*.jpg" "*.jpeg" "*.gif" "*.bmp"
+          git add .gitattributes
+
           # Copy necessary files from GitHub repo
           cp ../README.md .
           cp ../requirements.txt .
@@ -46,5 +51,5 @@ jobs:
           git add .
           git diff --quiet && git diff --staged --quiet || (
             git commit -m "Sync from GitHub: ${{ github.sha }}"
-            git push
+            git push origin main
           )
