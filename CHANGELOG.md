@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2025-01-27
+
+### Added
+- **Git LFS support** for HuggingFace Spaces binary files (images)
+- **PyPI Trusted Publishing** workflow for automated releases via GitHub tags
+- **Example data deployment** to HuggingFace Spaces (color/depth/result images)
+
+### Changed
+- **Gradio pinned** to 4.44.1 with pydantic 2.10.6 workaround for HF Spaces compatibility
+- **API imports simplified**: `from rgbddepth import RGBDDepth` (updated README and infer.py)
+- **xFormers warnings** reduced to debug level (cleaner HF Spaces logs)
+
+### Fixed
+- **HuggingFace Spaces deployment**: Git LFS configured for PNG/JPG files
+- **PyPI workflow**: Automated publishing on version tags (v*)
+- **README documentation**: Corrected Python API import examples
+- **Tests**: Removed hardcoded version check to prevent future breakage
+
 ## [1.0.2] - 2025-01-25
 
 ### Added

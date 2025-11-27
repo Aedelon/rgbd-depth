@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rgbd-depth"
-version = "1.0.4"
+version = "1.0.3"
 description = "Optimized RGB-D depth refinement using Vision Transformers with CUDA, MPS, and CPU support"
 readme = "README.md"
 requires-python = ">=3.10"
