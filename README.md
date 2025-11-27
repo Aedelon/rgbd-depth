@@ -5,6 +5,7 @@ colorFrom: blue
 colorTo: purple
 sdk: gradio
 sdk_version: "4.44.0"
+python_version: "3.10"
 app_file: app.py
 pinned: false
 license: apache-2.0
@@ -19,7 +20,7 @@ Optimized Python package for RGB-D depth refinement using Vision Transformer enc
 [![PyPI downloads](https://img.shields.io/pypi/dm/rgbd-depth.svg)](https://pypi.org/project/rgbd-depth/)
 [![Hugging Face Spaces](https://img.shields.io/badge/🤗%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/Aedelon/rgbd-depth)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 
 ## 🎮 Try it Online
@@ -115,21 +116,38 @@ For production workflows or faster inference, use the local installation below.
 
 ### From PyPI (recommended)
 
+**Basic installation (core dependencies only):**
 ```bash
-# Basic installation
 pip install rgbd-depth
+```
 
-# With CUDA optimizations (xFormers)
+**Installation with extras:**
+```bash
+# With CUDA optimizations (xFormers, ~8% faster)
 pip install rgbd-depth[xformers]
 
-# Development installation
+# With Gradio demo interface
+pip install rgbd-depth[demo]
+
+# With HuggingFace Hub model downloads
+pip install rgbd-depth[download]
+
+# With development tools (pytest, black, ruff, etc.)
+pip install rgbd-depth[dev]
+
+# Install everything (all extras)
+pip install rgbd-depth[all]
+```
+
+**Development installation (editable):**
+```bash
 git clone https://github.com/Aedelon/rgbd-depth.git
 cd rgbd-depth
-pip install -e .
+pip install -e ".[dev]"  # or uv sync --extra dev
 ```
 
 **Requirements:**
-- Python 3.8+
+- Python 3.10+ (Python 3.8-3.9 support dropped in v1.0.2+)
 - PyTorch 2.0+ with appropriate CUDA/MPS support
 - OpenCV, NumPy, Pillow
 
@@ -264,18 +282,53 @@ We currently provide pre-trained models available for:
 ## File Structure
 
 ```
-cdm/
-├── infer.py              # Main inference script
-├── setup.py              # Package installation
-├── rgbddepth/            # Core package
-│   ├── __init__.py
-│   ├── dpt.py            # Main RGBDDepth model
-│   ├── dinov2.py         # DINOv2 encoder
-│   ├── dinov2_layers/    # ViT transformer layers
-│   └── util/             # Utility functions
-│       ├── blocks.py     # Neural network blocks
-│       └── transform.py  # Image preprocessing
-└── README.md
+rgbd-depth/
+├── app.py                      # Gradio web demo for HuggingFace Spaces
+├── infer.py                    # CLI inference script (main entry point)
+├── pyproject.toml              # Modern package config (PEP 621, replaces setup.py)
+├── setup.py                    # Legacy setuptools build script
+├── requirements.txt            # Minimal deps for HuggingFace Spaces
+├── uv.lock                     # UV package manager lock file
+├── LICENSE                     # Apache 2.0 license
+├── README.md                   # This file (GitHub/PyPI/HF Spaces unified)
+├── OPTIMIZATION.md             # Performance benchmarks and optimization guide
+├── CHANGELOG.md                # Version history and release notes
+└── VIRAL_STRATEGY.md           # GitHub/PyPI marketing strategy
+│
+├── rgbddepth/                  # Main Python package
+│   ├── __init__.py             # Public API exports (RGBDDepth, DinoVisionTransformer, __version__)
+│   ├── dpt.py                  # RGBDDepth model (dual-branch ViT + DPT decoder)
+│   ├── dinov2.py               # DINOv2 Vision Transformer encoder
+│   ├── flexible_attention.py   # Cross-attention w/ xFormers + SDPA fallback
+│   │
+│   ├── dinov2_layers/          # Vision Transformer building blocks (from Meta DINOv2)
+│   │   ├── __init__.py
+│   │   ├── attention.py        # Self-attention w/ optional xFormers (MemEffAttention)
+│   │   ├── block.py            # Transformer encoder block (NestedTensorBlock)
+│   │   ├── mlp.py              # Feed-forward network (Mlp)
+│   │   ├── patch_embed.py      # Image → patch embeddings (PatchEmbed)
+│   │   ├── swiglu_ffn.py       # SwiGLU activation FFN
+│   │   ├── drop_path.py        # Stochastic depth regularization
+│   │   └── layer_scale.py      # LayerScale normalization
+│   │
+│   └── util/                   # Utilities
+│       ├── __init__.py
+│       ├── blocks.py           # DPT decoder blocks (FeatureFusionBlock, ResidualConvUnit)
+│       └── transform.py        # Image preprocessing (Resize, PrepareForNet)
+│
+├── tests/                      # Test suite (42 tests, runs in GitHub Actions)
+│   ├── test_import.py          # Basic imports and smoke tests
+│   └── test_model.py           # Architecture, forward pass, attention, preprocessing
+│
+├── example_data/               # Example RGB-D pairs for testing
+│   ├── color_12.png            # RGB image sample
+│   ├── depth_12.png            # Depth map sample
+│   └── result.png              # Expected output
+│
+└── .github/workflows/          # CI/CD automation
+    ├── test.yml                # Run tests on Python 3.10-3.12 (Ubuntu/macOS/Windows)
+    ├── publish.yml             # Auto-publish to PyPI on release tags
+    └── deploy-hf.yml           # Auto-deploy to HuggingFace Spaces on push to main
 ```
 
 ## Performance
@@ -292,25 +345,12 @@ CDMs achieve state-of-the-art performance on metric depth estimation:
 - Zero-shot generalization across different camera types
 - Real-time inference suitable for robot control (lightweight ViT variants)
 
-### Speed Benchmarks
+**Performance optimizations:**
+- xFormers support on CUDA (~8% faster than native SDPA)
+- Mixed precision (FP16/BF16) for faster inference
+- Device-specific optimizations (CUDA/MPS/CPU)
 
-| Device | Mode | Precision | Time | vs Baseline | Notes |
-|--------|------|-----------|------|-------------|-------|
-| **CUDA** | Vanilla | FP32 | TBD | - | Reference |
-| **CUDA** | Optimized (xFormers) | FP32 | TBD | ~8% faster | Recommended |
-| **CUDA** | Optimized | FP16 | TBD | ~2× faster | Best speed |
-| **CUDA** | Optimized | BF16 | TBD | ~2× faster | Best stability |
-| **MPS** | Vanilla | FP32 | 1.34s | - | torch.compile: no gain |
-| **MPS** | Vanilla | FP16 | TBD | TBD | To be benchmarked |
-| **CPU** | Vanilla | FP32 | 13.37s | - | Optimizations: -11% slower |
-
-**Notes:**
-- **CUDA**: Optimizations auto-enabled by default (use `--no-optimize` to disable)
-- **MPS**: torch.compile provides no gain for Vision Transformers (~0% improvement)
-- **CPU**: torch.compile is counterproductive (compilation overhead > gains)
-- xFormers is CUDA-only (~8% faster than native SDPA)
-
-For detailed optimization strategies, see [OPTIMIZATION.md](OPTIMIZATION.md).
+For detailed optimization strategies and benchmarks, see [OPTIMIZATION.md](OPTIMIZATION.md).
 
 ## What's Different from Reference?
 

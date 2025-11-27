@@ -4,6 +4,7 @@
 
 """Gradio demo for rgbd-depth on Hugging Face Spaces."""
 
+import logging
 from pathlib import Path
 
 import gradio as gr
@@ -12,6 +13,14 @@ import torch
 from PIL import Image
 
 from rgbddepth import RGBDDepth
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 # Global model cache
 MODELS = {}
@@ -35,16 +44,16 @@ def download_model(camera_model: str = DEFAULT_MODEL):
         from huggingface_hub import hf_hub_download
 
         repo_id, filename = HF_MODELS.get(camera_model, HF_MODELS[DEFAULT_MODEL])
-        print(f"📥 Downloading {camera_model} model from {repo_id}/{filename}...")
+        logger.info(f"Downloading {camera_model} model from {repo_id}/{filename}...")
 
         # Download the checkpoint
         checkpoint_path = hf_hub_download(repo_id=repo_id, filename=filename, cache_dir=".cache")
 
-        print(f"✓ Downloaded to {checkpoint_path}")
+        logger.info(f"Downloaded to {checkpoint_path}")
         return checkpoint_path
 
     except Exception as e:
-        print(f"❌ Failed to download model: {e}")
+        logger.error(f"Failed to download model: {e}")
         return None
 
 
@@ -70,7 +79,7 @@ def load_model(camera_model: str = DEFAULT_MODEL, use_xformers: bool = False):
         local_path = Path(f"checkpoints/{camera_model}.pt")
         if local_path.exists():
             checkpoint_path = str(local_path)
-            print(f"✓ Using local checkpoint: {checkpoint_path}")
+            logger.info(f"Using local checkpoint: {checkpoint_path}")
         else:
             # 2. Download from HuggingFace
             checkpoint_path = download_model(camera_model)
@@ -87,11 +96,13 @@ def load_model(camera_model: str = DEFAULT_MODEL, use_xformers: bool = False):
                     states = checkpoint
 
                 model.load_state_dict(states, strict=False)
-                print(f"✓ Loaded checkpoint for {camera_model}")
+                logger.info(f"Loaded checkpoint for {camera_model}")
             except Exception as e:
-                print(f"⚠ Failed to load checkpoint: {e}, using random weights")
+                logger.warning(f"Failed to load checkpoint: {e}, using random weights")
         else:
-            print(f"⚠ No checkpoint available for {camera_model}, using random weights (demo only)")
+            logger.warning(
+                f"No checkpoint available for {camera_model}, using random weights (demo only)"
+            )
 
         # Move to GPU if available (CUDA or MPS for macOS)
         if torch.cuda.is_available():
@@ -167,13 +178,13 @@ def process_depth(
         else:
             dtype = None  # FP32
 
-        # DEBUG: Print input stats
-        print(f"[DEBUG] depth_image raw: min={depth_image.min():.1f}, max={depth_image.max():.1f}")
-        print(
-            f"[DEBUG] depth_normalized: min={depth_normalized[depth_normalized>0].min():.4f}, max={depth_normalized.max():.4f}"
+        # Log input statistics
+        logger.debug(f"depth_image raw: min={depth_image.min():.1f}, max={depth_image.max():.1f}")
+        logger.debug(
+            f"depth_normalized: min={depth_normalized[depth_normalized>0].min():.4f}, max={depth_normalized.max():.4f}"
         )
-        print(
-            f"[DEBUG] simi_depth: min={simi_depth[simi_depth>0].min():.4f}, max={simi_depth.max():.4f}"
+        logger.debug(
+            f"simi_depth: min={simi_depth[simi_depth>0].min():.4f}, max={simi_depth.max():.4f}"
         )
 
         # Run inference
@@ -184,14 +195,14 @@ def process_depth(
         else:
             pred = model.infer_image(rgb_image, simi_depth, input_size=input_size)
 
-        # DEBUG: Print prediction stats before reconversion
-        print(f"[DEBUG] pred (inverse depth): min={pred[pred>0].min():.4f}, max={pred.max():.4f}")
+        # Log prediction statistics
+        logger.debug(f"pred (inverse depth): min={pred[pred>0].min():.4f}, max={pred.max():.4f}")
 
         # Convert from inverse depth to depth
         pred = np.where(pred > 1e-8, 1.0 / pred, 0.0)
 
-        # DEBUG: Print final depth stats
-        print(f"[DEBUG] pred (depth): min={pred[pred>0].min():.4f}, max={pred.max():.4f}")
+        # Log final depth statistics
+        logger.debug(f"pred (depth): min={pred[pred>0].min():.4f}, max={pred.max():.4f}")
 
         # Colorize for visualization
         try:
