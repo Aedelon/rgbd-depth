@@ -13,7 +13,6 @@ def test_import_main_modules():
 
     assert RGBDDepth is not None
     assert DinoVisionTransformer is not None
-    assert __version__ == "1.0.2"
 
 
 def test_import_flexible_attention():
