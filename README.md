@@ -19,8 +19,7 @@ license: apache-2.0
 
 [![Tests](https://github.com/Aedelon/rgbd-depth/actions/workflows/test.yml/badge.svg)](https://github.com/Aedelon/rgbd-depth/actions/workflows/test.yml)
 [![PyPI version](https://img.shields.io/pypi/v/rgbd-depth.svg)](https://pypi.org/project/rgbd-depth/)
-[![PyPI downloads](https://img.shields.io/pypi/dm/rgbd-depth.svg)](https://pypi.org/project/rgbd-depth/)
-[![GitHub stars](https://img.shields.io/github/stars/Aedelon/rgbd-depth.svg?style=social)](https://github.com/Aedelon/rgbd-depth)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Aedelon/camera-depth-models/blob/main/quickstart_colab.ipynb)
 [![Hugging Face Spaces](https://img.shields.io/badge/🤗%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/Aedelon/rgbd-depth)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
